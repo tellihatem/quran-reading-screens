@@ -142,11 +142,19 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   // Audio recording
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecordingInitialized = false;
+  bool _versesVisible = true; // Track if verses should be visible during recording
 
   @override
   void initState() {
     super.initState();
     _initRecording();
+    
+    // Schedule page building after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _buildPages();
+      }
+    });
   }
 
   @override
@@ -185,6 +193,59 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     }
   }
 
+  // Show dialog to ask about hiding verses during recording
+  Future<bool?> _showHideVersesDialog() async {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'هل تريد إخفاء الآيات أثناء التسجيل؟',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Yes button - hide verses
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.visibility_off, color: Colors.white),
+                    label: const Text('نعم، إخفاء الآيات'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                  ),
+                  // No button - keep verses visible
+                  TextButton.icon(
+                    icon: const Icon(Icons.visibility, color: Colors.grey),
+                    label: const Text('لا، إبقِ الآيات ظاهرة'),
+                    onPressed: () => Navigator.pop(context, false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // Start or stop recording
   Future<void> _toggleRecording() async {
     if (!_isRecordingInitialized) {
@@ -193,7 +254,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     }
 
     if (_isRecording) {
-      // Stop recording
+      // Stop recording and show verses again
       try {
         final path = await _audioRecorder.stop();
         if (path != null) {
@@ -207,22 +268,36 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           final file = File(path);
           await file.rename(newPath);
 
-          debugPrint('Recording saved to: $newPath');
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Recording saved')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('تم حفظ التسجيل في: ${file.path}'),
+                duration: const Duration(seconds: 3),
+              ),
+            );
           }
         }
       } catch (e) {
         debugPrint('Error stopping recording: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error saving recording')),
+            const SnackBar(content: Text('Error stopping recording')),
           );
         }
       }
+      
+      // Make sure verses are visible after stopping recording
+      if (mounted) {
+        setState(() {
+          _versesVisible = true;
+          _isRecording = false;
+        });
+      }
     } else {
+      // Show dialog before starting recording
+      final shouldHideVerses = await _showHideVersesDialog();
+      if (shouldHideVerses == null) return; // User dismissed the dialog
+      
       // Start recording
       try {
         final tempDir = await getTemporaryDirectory();
@@ -235,28 +310,23 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           ),
           path: tempPath,
         );
+        
+        // Update state after successful recording start
+        if (mounted) {
+          setState(() {
+            _versesVisible = !shouldHideVerses;
+            _isRecording = true;
+          });
+        }
       } catch (e) {
         debugPrint('Error starting recording: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Error starting recording')),
           );
-          return;
         }
       }
     }
-
-    if (mounted) {
-      setState(() {
-        _isRecording = !_isRecording;
-      });
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _buildPages();
   }
 
   // Add method to update text size
@@ -498,27 +568,51 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       ),
       body: Stack(
         children: [
-          // Main content
-          pages.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : PageView.builder(
-                controller: _pageController,
-                itemCount: pages.length,
-                reverse: false, // RIGHT swipe = next page ✅
-                physics: const ClampingScrollPhysics(),
-                onPageChanged: _handlePageChange,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      16.0,
-                      16.0,
-                      16.0,
-                      100.0,
-                    ), // Add bottom padding for the control bar
-                    child: pages[index],
-                  );
-                },
+          // Loading state - only show when pages are empty
+          if (pages.isEmpty) ...[
+            const Center(child: CircularProgressIndicator()),
+          ] else if (!_isRecording || _versesVisible) ...[
+            // Show verses when not recording or when user chose to keep them visible during recording
+            PageView.builder(
+              controller: _pageController,
+              itemCount: pages.length,
+              reverse: false, // RIGHT swipe = next page ✅
+              physics: const ClampingScrollPhysics(),
+              onPageChanged: _handlePageChange,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    16.0,
+                    16.0,
+                    16.0,
+                    100.0,
+                  ), // Add bottom padding for the control bar
+                  child: pages[index],
+                );
+              },
+            ),
+          ],
+          
+          // Show recording indicator only when recording and user chose to hide verses
+          if (_isRecording && !_versesVisible)
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.mic, size: 48, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    'جاري التسجيل...',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'اضغط على زر الإيقاف لإنهاء التسجيل',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
               ),
+            ),
 
           // Bottom Control Bar
           Positioned(
@@ -528,16 +622,16 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
+                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                 border: Border(
                   top: BorderSide(
-                    color: Theme.of(context).dividerColor.withOpacity(0.3),
+                    color: isDarkMode ? Colors.white10 : Colors.grey[300]!,
                     width: 1,
                   ),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, -2),
                   ),
@@ -553,13 +647,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   horizontal: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
+                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(30),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.1),
                       blurRadius: 15,
                       offset: const Offset(0, -5),
                     ),
@@ -573,7 +667,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       icon: Icons.repeat,
                       label: 'كرر',
                       onPressed: () {},
-                      iconColor: const Color(0xFF6C63FF), // Purple
+                      iconColor: isDarkMode ? Colors.white70 : const Color(0xFF6C63FF),
                       showCounter: true,
                       counter: '0',
                     ),
@@ -584,7 +678,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       label: _isRecording ? 'تسجيل' : 'سجل',
                       onPressed: _toggleRecording,
                       isHighlighted: _isRecording,
-                      highlightColor: Colors.red,
+                      highlightColor: isDarkMode ? const Color(0xFF81C784) : Colors.red,
                     ),
 
                     // Play Button (right)
@@ -592,7 +686,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       icon: Icons.play_arrow,
                       label: 'استمع',
                       onPressed: () {},
-                      iconColor: const Color(0xFF4CAF50), // Green
+                      iconColor: isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
                     ),
                   ],
                 ),
