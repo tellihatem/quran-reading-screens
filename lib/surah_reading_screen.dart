@@ -17,6 +17,7 @@ class SurahReadingScreen extends StatefulWidget {
 class _SurahReadingScreenState extends State<SurahReadingScreen> {
   List<Widget> pages = [];
   final PageController _pageController = PageController();
+  double textSize = 28.0; // Add text size state
 
   @override
   void dispose() {
@@ -30,6 +31,17 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     _buildPages();
   }
 
+  // Add method to update text size
+  void _updateTextSize(double newSize) {
+    setState(() {
+      textSize = newSize;
+      pages = []; // Clear pages to force rebuild
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _buildPages(); // Rebuild pages with new text size
+      });
+    });
+  }
+
   void _buildPages() {
     final verseCount = quran.getVerseCount(widget.surahNumber);
     final shouldSkipBismillah =
@@ -40,7 +52,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     List<TextSpan> currentSpans = [];
 
     final TextStyle textStyle = GoogleFonts.amiri(
-      fontSize: 28,
+      fontSize: textSize, // Use the state variable
       height: 2.0,
       color: Colors.grey[900],
     );
@@ -134,7 +146,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             showDialog(
               context: context,
               barrierColor: Colors.black54,
-              builder: (BuildContext context) => const SettingsMenu(),
+              builder: (BuildContext context) => SettingsMenu(
+                initialTextSize: textSize,
+                onTextSizeChanged: _updateTextSize,
+              ),
             );
           },
         ),

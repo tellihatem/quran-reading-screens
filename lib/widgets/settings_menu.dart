@@ -1,8 +1,81 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
-class SettingsMenu extends StatelessWidget {
-  const SettingsMenu({Key? key}) : super(key: key);
+class SettingsMenu extends StatefulWidget {
+  final double initialTextSize;
+  final ValueChanged<double> onTextSizeChanged;
+
+  const SettingsMenu({
+    Key? key,
+    required this.initialTextSize,
+    required this.onTextSizeChanged,
+  }) : super(key: key);
+
+  @override
+  _SettingsMenuState createState() => _SettingsMenuState();
+}
+
+class _SettingsMenuState extends State<SettingsMenu> {
+  late double _currentTextSize;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTextSize = widget.initialTextSize;
+  }
+
+  void _showTextSizeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('تغيير حجم الخط'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_currentTextSize.round()}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Slider(
+                    value: _currentTextSize,
+                    min: 20,
+                    max: 40,
+                    divisions: 20,
+                    label: _currentTextSize.round().toString(),
+                    onChanged: (value) {
+                      setState(() {
+                        _currentTextSize = value;
+                      });
+                      widget.onTextSizeChanged(value);
+                    },
+                  ),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('صغير'),
+                      Text('كبير'),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('تم'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +121,7 @@ class SettingsMenu extends StatelessWidget {
                 ],
               ),
               const Divider(height: 24, thickness: 1),
-              _buildMenuItem('تغيير حجم الخط', Icons.text_fields, () {}),
+              _buildMenuItem('تغيير حجم الخط', Icons.text_fields, _showTextSizeDialog),
               const SizedBox(height: 16),
               _buildMenuItem('تغيير الخط', Icons.font_download, () {}),
               const SizedBox(height: 16),
