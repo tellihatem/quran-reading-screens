@@ -34,10 +34,19 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final borderColor = isDark ? Colors.white10 : Colors.grey[300]!;
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('اختر السورة', style: TextStyle(fontFamily: 'Amiri', fontSize: 24)),
+        title: Text(
+          'اختر السورة',
+          style: GoogleFonts.amiri(
+            fontSize: 24,
+            color: Colors.white,
+          ),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
@@ -46,7 +55,8 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
               color: Colors.white,
             ),
             onPressed: widget.toggleDarkMode,
-            padding: EdgeInsets.only(left: 20, right: 10),
+            padding: const EdgeInsets.only(left: 20, right: 10),
+            tooltip: isDark ? 'الوضع الفاتح' : 'الوضع المظلم',
           ),
         ],
       ),
@@ -58,16 +68,29 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
               textAlign: TextAlign.right,
               textDirection: ui.TextDirection.rtl,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search, textDirection: ui.TextDirection.rtl),
+                prefixIcon: Icon(
+                  Icons.search,
+                  textDirection: ui.TextDirection.rtl,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ),
                 hintText: 'ابحث عن السورة',
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  fontFamily: 'Amiri',
+                ),
                 hintTextDirection: ui.TextDirection.rtl,
+                filled: true,
+                fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey[50],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.green[700]!),
+                  borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).primaryColor,
+                    width: 1.5,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               ),
@@ -94,8 +117,13 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                       final surahNumber = filteredSurahNumbers[idx];
                       return Card(
                         elevation: 2,
+                        color: cardColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color: borderColor,
+                            width: 0.5,
+                          ),
                         ),
                         child: ListTile(
                           onTap: () {
@@ -103,10 +131,10 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => SurahReadingScreen(
-                                surahNumber: surahNumber,
-                                toggleDarkMode: widget.toggleDarkMode,
-                                isDarkMode: widget.isDarkMode,
-                              ),
+                                  surahNumber: surahNumber,
+                                  toggleDarkMode: widget.toggleDarkMode,
+                                  isDarkMode: widget.isDarkMode,
+                                ),
                               ),
                             );
                           },
@@ -119,7 +147,7 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                                 '${quran.getVerseCount(surahNumber)} آية',
                                 style: GoogleFonts.amiri(
                                   fontSize: 16,
-                                  color: Colors.grey[600],
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
                                 ),
                                 textDirection: ui.TextDirection.rtl,
                               ),
@@ -130,7 +158,7 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                                   style: GoogleFonts.amiri(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: textColor,
                                   ),
                                   textDirection: ui.TextDirection.rtl,
                                   textAlign: TextAlign.center,
@@ -146,7 +174,9 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                             height: 40,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                              color: isDark 
+                                  ? Theme.of(context).primaryColor.withOpacity(0.2)
+                                  : Theme.of(context).primaryColor.withOpacity(0.1),
                               border: Border.all(
                                 color: Theme.of(context).primaryColor,
                                 width: 1.5,

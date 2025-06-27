@@ -195,50 +195,112 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Show dialog to ask about hiding verses during recording
   Future<bool?> _showHideVersesDialog() async {
+    final isDark = widget.isDarkMode;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final buttonTextColor = isDark ? Colors.white : Colors.white;
+    
     return showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: 50,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey[700] : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               Text(
                 'هل تريد إخفاء الآيات أثناء التسجيل؟',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: GoogleFonts.amiri(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                  height: 1.5,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Yes button - hide verses
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.visibility_off, color: Colors.white),
-                    label: const Text('نعم، إخفاء الآيات'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onPressed: () => Navigator.pop(context, true),
-                  ),
                   // No button - keep verses visible
-                  TextButton.icon(
-                    icon: const Icon(Icons.visibility, color: Colors.grey),
-                    label: const Text('لا، إبقِ الآيات ظاهرة'),
-                    onPressed: () => Navigator.pop(context, false),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: Icon(
+                        Icons.visibility,
+                        color: isDark ? Colors.green[300] : Colors.green[700],
+                      ),
+                      label: Text(
+                        'لا، إبقِ الآيات ظاهرة',
+                        style: GoogleFonts.amiri(
+                          fontSize: 16,
+                          color: isDark ? Colors.green[300] : Colors.green[700],
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        side: BorderSide(
+                          color: isDark ? Colors.green[300]! : Colors.green[700]!,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: isDark
+                            ? Colors.green[900]!.withOpacity(0.2)
+                            : Colors.green[50]!,
+                      ),
+                      onPressed: () => Navigator.pop(context, false),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Yes button - hide verses
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.visibility_off, size: 20),
+                      label: Text(
+                        'نعم، إخفاء الآيات',
+                        style: GoogleFonts.amiri(
+                          fontSize: 16,
+                          color: buttonTextColor,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? Colors.green[700] : Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -440,30 +502,41 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   Widget _buildQuranPage(List<TextSpan> spans) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = widget.isDarkMode;
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[850] : Colors.white,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           border: Border.all(
-            color: isDark ? Colors.grey[700]! : Colors.green.shade100,
+            color: isDark ? Colors.white10 : Colors.green.shade100,
+            width: 1.0,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            if (isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
+            BoxShadow(
+              color: isDark ? Colors.black54 : Colors.grey.withOpacity(0.2),
+              blurRadius: 15,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: SelectableText.rich(
-          TextSpan(children: spans),
+          TextSpan(
+            children: spans.map((span) {
+              return TextSpan(
+                text: span.text,
+                style: GoogleFonts.amiri(
+                  fontSize: textSize,
+                  height: 2.0,
+                  color: isDark ? Colors.grey[100] : Colors.grey[900],
+                ),
+              );
+            }).toList(),
+          ),
           textAlign: TextAlign.justify,
-          style: TextStyle(color: isDark ? Colors.grey[100] : Colors.grey[900]),
         ),
       ),
     );
@@ -503,6 +576,19 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Get dark mode state from widget
   bool get isDarkMode => widget.isDarkMode;
+
+  @override
+  void didUpdateWidget(SurahReadingScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Rebuild pages when theme changes
+    if (oldWidget.isDarkMode != widget.isDarkMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _buildPages();
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
