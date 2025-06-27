@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quran/quran.dart' as quran;
 import 'dart:ui' as ui;
+import 'package:haffiz/widgets/settings_menu.dart';
 
 class SurahReadingScreen extends StatefulWidget {
   final int surahNumber;
@@ -71,6 +72,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     });
   }
 
+
+
   Widget _buildQuranPage(List<TextSpan> spans) {
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -128,15 +131,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () {
-            // TODO: open drawer or settings
+            showDialog(
+              context: context,
+              barrierColor: Colors.black54,
+              builder: (BuildContext context) => const SettingsMenu(),
+            );
           },
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_forward, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
         title: Column(
           children: [
             Text(
@@ -158,6 +159,12 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           ],
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_forward, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
       body:
           pages.isEmpty
