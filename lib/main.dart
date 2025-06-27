@@ -7,28 +7,82 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isDarkMode = false;
+
+  void toggleDarkMode() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'حافظ',
       theme: ThemeData(
+        brightness: Brightness.light,
         fontFamily: 'Amiri',
         textTheme: const TextTheme(
           displayLarge: TextStyle(fontFamily: 'Amiri'),
           bodyLarge: TextStyle(fontFamily: 'Amiri'),
           bodyMedium: TextStyle(fontFamily: 'Amiri'),
+        ).apply(
+          bodyColor: Colors.grey[900],
+          displayColor: Colors.grey[900],
         ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green[700]!,
           primary: Colors.green[700],
           secondary: Colors.green[600],
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF7FDF3),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF2E7D32),
+          foregroundColor: Colors.white,
+        ),
       ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        fontFamily: 'Amiri',
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(fontFamily: 'Amiri'),
+          bodyLarge: TextStyle(fontFamily: 'Amiri'),
+          bodyMedium: TextStyle(fontFamily: 'Amiri'),
+        ).apply(
+          bodyColor: Colors.grey[100],
+          displayColor: Colors.grey[100],
+        ),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green[800]!,
+          primary: Colors.green[800],
+          secondary: Colors.green[700],
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1B5E20),
+          foregroundColor: Colors.white,
+        ),
+        cardTheme: CardTheme(
+          color: Colors.grey[850],
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       locale: const Locale('ar'),
       supportedLocales: const [
         Locale('ar'),
@@ -45,7 +99,12 @@ class MyApp extends StatelessWidget {
         );
       },
       debugShowCheckedModeBanner: false,
-      home: const SurahSelectionScreen(),
+      home: Builder(
+        builder: (context) => SurahSelectionScreen(
+          toggleDarkMode: toggleDarkMode,
+          isDarkMode: _isDarkMode,
+        ),
+      ),
     );
   }
 }

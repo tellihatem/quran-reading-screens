@@ -5,7 +5,14 @@ import 'surah_reading_screen.dart';
 import 'dart:ui' as ui;
 
 class SurahSelectionScreen extends StatefulWidget {
-  const SurahSelectionScreen({Key? key}) : super(key: key);
+  final Function() toggleDarkMode;
+  final bool isDarkMode;
+
+  const SurahSelectionScreen({
+    Key? key,
+    required this.toggleDarkMode,
+    required this.isDarkMode,
+  }) : super(key: key);
 
   @override
   State<SurahSelectionScreen> createState() => _SurahSelectionScreenState();
@@ -26,10 +33,22 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('اختر السورة', style: TextStyle(fontFamily: 'Amiri', fontSize: 24)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode : Icons.dark_mode,
+              color: Colors.white,
+            ),
+            onPressed: widget.toggleDarkMode,
+            padding: EdgeInsets.only(left: 20, right: 10),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -83,10 +102,11 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (_) => SurahReadingScreen(
-                                      surahNumber: surahNumber,
-                                    ),
+                                builder: (_) => SurahReadingScreen(
+                                surahNumber: surahNumber,
+                                toggleDarkMode: widget.toggleDarkMode,
+                                isDarkMode: widget.isDarkMode,
+                              ),
                               ),
                             );
                           },
