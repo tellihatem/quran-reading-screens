@@ -8,6 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:record/record.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 import 'package:haffiz/widgets/settings_menu.dart';
 
 class SurahReadingScreen extends StatefulWidget {
@@ -139,16 +141,26 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   double textSize = 28.0; // Add text size state
   bool _isRecording = false; // Track recording state
 
-  // Audio recording
+  // Audio recording and playback
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecordingInitialized = false;
-  bool _versesVisible = true; // Track if verses should be visible during recording
+  bool _versesVisible =
+      true; // Track if verses should be visible during recording
+
+  // Playback state
+  String? _savedRecordingPath;
+  bool _showPlaybackBar = false;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  Duration _audioDuration = Duration.zero;
+  Duration _currentPosition = Duration.zero;
+  StreamSubscription<Duration>? _positionSub;
+  bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
     _initRecording();
-    
+
     // Schedule page building after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -159,10 +171,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   @override
   void dispose() {
+    _audioRecorder.dispose();
     _pageController.dispose();
-    if (_isRecording) {
-      _audioRecorder.stop();
-    }
+    _positionSub?.cancel();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -198,7 +210,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     final isDark = widget.isDarkMode;
     final textColor = isDark ? Colors.white : Colors.black87;
     final buttonTextColor = isDark ? Colors.white : Colors.white;
-    
+
     return showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -260,17 +272,22 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 16,
+                        ),
                         side: BorderSide(
-                          color: isDark ? Colors.green[300]! : Colors.green[700]!,
+                          color:
+                              isDark ? Colors.green[300]! : Colors.green[700]!,
                           width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        backgroundColor: isDark
-                            ? Colors.green[900]!.withOpacity(0.2)
-                            : Colors.green[50]!,
+                        backgroundColor:
+                            isDark
+                                ? Colors.green[900]!.withOpacity(0.2)
+                                : Colors.green[50]!,
                       ),
                       onPressed: () => Navigator.pop(context, false),
                     ),
@@ -288,8 +305,12 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? Colors.green[700] : Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        backgroundColor:
+                            isDark ? Colors.green[700] : Colors.green,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -306,6 +327,78 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         );
       },
     );
+  }
+
+  // Format duration as MM:SS
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  // Reset playback bar and clean up resources
+  void _resetPlaybackBar() {
+    if (_savedRecordingPath != null) {
+      try {
+        final file = File(_savedRecordingPath!);
+        if (file.existsSync()) file.deleteSync();
+      } catch (e) {
+        debugPrint('Error deleting audio file: $e');
+      }
+    }
+    _audioPlayer.stop();
+    setState(() {
+      _savedRecordingPath = null;
+      _showPlaybackBar = false;
+      _isPlaying = false;
+      _currentPosition = Duration.zero;
+    });
+  }
+
+  // Toggle play/pause
+  Future<void> _togglePlayback() async {
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+    } else {
+      await _audioPlayer.play();
+    }
+    setState(() {
+      _isPlaying = !_isPlaying;
+    });
+  }
+
+  // Initialize audio player with saved recording
+  Future<void> _initAudioPlayer(String path) async {
+    try {
+      await _audioPlayer.setFilePath(path);
+      _audioDuration = _audioPlayer.duration ?? Duration.zero;
+
+      _positionSub?.cancel();
+      _positionSub = _audioPlayer.positionStream.listen((pos) {
+        if (mounted) {
+          setState(() {
+            _currentPosition = pos;
+          });
+        }
+      });
+
+      _audioPlayer.playerStateStream.listen((state) {
+        if (mounted && state.processingState == ProcessingState.completed) {
+          setState(() {
+            _isPlaying = false;
+            _currentPosition = Duration.zero;
+          });
+          _audioPlayer.seek(Duration.zero);
+        }
+      });
+    } catch (e) {
+      debugPrint('Error initializing audio player: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error initializing audio playback')),
+        );
+      }
+    }
   }
 
   // Start or stop recording
@@ -330,11 +423,26 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           final file = File(path);
           await file.rename(newPath);
 
+          // Save path and initialize playback
+          setState(() {
+            _savedRecordingPath = newPath;
+            _showPlaybackBar = true;
+          });
+
+          // Initialize audio player
+          await _initAudioPlayer(newPath);
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('تم حفظ التسجيل في: ${file.path}'),
-                duration: const Duration(seconds: 3),
+                content: const Text('تم حفظ التسجيل بنجاح'),
+                duration: const Duration(seconds: 2),
+                action: SnackBarAction(
+                  label: 'إغلاق',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  },
+                ),
               ),
             );
           }
@@ -347,7 +455,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           );
         }
       }
-      
+
       // Make sure verses are visible after stopping recording
       if (mounted) {
         setState(() {
@@ -359,7 +467,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       // Show dialog before starting recording
       final shouldHideVerses = await _showHideVersesDialog();
       if (shouldHideVerses == null) return; // User dismissed the dialog
-      
+
       // Start recording
       try {
         final tempDir = await getTemporaryDirectory();
@@ -372,7 +480,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           ),
           path: tempPath,
         );
-        
+
         // Update state after successful recording start
         if (mounted) {
           setState(() {
@@ -525,16 +633,17 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         ),
         child: SelectableText.rich(
           TextSpan(
-            children: spans.map((span) {
-              return TextSpan(
-                text: span.text,
-                style: GoogleFonts.amiri(
-                  fontSize: textSize,
-                  height: 2.0,
-                  color: isDark ? Colors.grey[100] : Colors.grey[900],
-                ),
-              );
-            }).toList(),
+            children:
+                spans.map((span) {
+                  return TextSpan(
+                    text: span.text,
+                    style: GoogleFonts.amiri(
+                      fontSize: textSize,
+                      height: 2.0,
+                      color: isDark ? Colors.grey[100] : Colors.grey[900],
+                    ),
+                  );
+                }).toList(),
           ),
           textAlign: TextAlign.justify,
         ),
@@ -588,6 +697,190 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         }
       });
     }
+  }
+
+  // Build the playback control bar
+  Widget _buildPlaybackBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDarkMode ? Colors.white10 : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Progress bar
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor:
+                  isDarkMode ? Colors.green[300] : Colors.green[700],
+              inactiveTrackColor:
+                  isDarkMode ? Colors.grey[800] : Colors.grey[300],
+              thumbColor: isDarkMode ? Colors.green[300] : Colors.green[700],
+              overlayColor: (isDarkMode
+                      ? Colors.green[300]
+                      : Colors.green[700])!
+                  .withOpacity(0.3),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+            ),
+            child: Slider(
+              value: _currentPosition.inMilliseconds.toDouble(),
+              max: _audioDuration.inMilliseconds.toDouble().clamp(
+                1,
+                double.infinity,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _currentPosition = Duration(milliseconds: value.toInt());
+                });
+                _audioPlayer.seek(_currentPosition);
+              },
+            ),
+          ),
+
+          // Controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Current position
+              Text(
+                _formatDuration(_currentPosition),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+
+              // Play/Pause button
+              IconButton(
+                icon: Icon(
+                  _isPlaying
+                      ? Icons.pause_circle_filled
+                      : Icons.play_circle_filled,
+                  size: 36,
+                  color: isDarkMode ? Colors.green[300] : Colors.green[700],
+                ),
+                onPressed: _togglePlayback,
+              ),
+
+              // Duration
+              Text(
+                _formatDuration(_audioDuration),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+
+              // Close button
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                onPressed: _resetPlaybackBar,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build the bottom control bar
+  Widget _buildBottomBar() {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDarkMode ? Colors.white10 : Colors.grey[300]!,
+              width: 1,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_showPlaybackBar) _buildPlaybackBar(),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Repeat Button with Counter (left)
+                  _buildKidFriendlyButton(
+                    icon: Icons.repeat,
+                    label: 'كرر',
+                    onPressed: () {},
+                    iconColor:
+                        isDarkMode ? Colors.white70 : const Color(0xFF6C63FF),
+                    showCounter: true,
+                    counter: '0',
+                  ),
+
+                  // Record Button (center)
+                  _buildKidFriendlyButton(
+                    icon: _isRecording ? Icons.stop : Icons.mic,
+                    label: _isRecording ? 'تسجيل' : 'سجل',
+                    onPressed: _toggleRecording,
+                    isHighlighted: _isRecording,
+                    highlightColor:
+                        isDarkMode ? const Color(0xFF81C784) : Colors.red,
+                  ),
+
+                  // Play Button (right)
+                  _buildKidFriendlyButton(
+                    icon: Icons.play_arrow,
+                    label: 'استمع',
+                    onPressed: () {},
+                    iconColor:
+                        isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -662,7 +955,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             PageView.builder(
               controller: _pageController,
               itemCount: pages.length,
-              reverse: false, // RIGHT swipe = next page ✅
+              reverse: false, // RIGHT swipe = next page
               physics: const ClampingScrollPhysics(),
               onPageChanged: _handlePageChange,
               itemBuilder: (context, index) {
@@ -678,7 +971,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
               },
             ),
           ],
-          
+
           // Show recording indicator only when recording and user chose to hide verses
           if (_isRecording && !_versesVisible)
             const Center(
@@ -700,85 +993,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
               ),
             ),
 
-          // Bottom Control Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                border: Border(
-                  top: BorderSide(
-                    color: isDarkMode ? Colors.white10 : Colors.grey[300]!,
-                    width: 1,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.1),
-                      blurRadius: 15,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Repeat Button with Counter (left)
-                    _buildKidFriendlyButton(
-                      icon: Icons.repeat,
-                      label: 'كرر',
-                      onPressed: () {},
-                      iconColor: isDarkMode ? Colors.white70 : const Color(0xFF6C63FF),
-                      showCounter: true,
-                      counter: '0',
-                    ),
-
-                    // Record Button (center)
-                    _buildKidFriendlyButton(
-                      icon: _isRecording ? Icons.stop : Icons.mic,
-                      label: _isRecording ? 'تسجيل' : 'سجل',
-                      onPressed: _toggleRecording,
-                      isHighlighted: _isRecording,
-                      highlightColor: isDarkMode ? const Color(0xFF81C784) : Colors.red,
-                    ),
-
-                    // Play Button (right)
-                    _buildKidFriendlyButton(
-                      icon: Icons.play_arrow,
-                      label: 'استمع',
-                      onPressed: () {},
-                      iconColor: isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _buildBottomBar(),
         ],
       ),
     );
