@@ -546,46 +546,60 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   void _buildPages() {
     final verseCount = quran.getVerseCount(widget.surahNumber);
-    final shouldSkipBismillah =
-        widget.surahNumber != 1 && widget.surahNumber != 9;
-    final startVerse = shouldSkipBismillah ? 2 : 1;
-
+    final bool showBismillah = widget.surahNumber != 9; // Show Bismillah for all surahs except At-Tawbah (9)
+    
     List<Widget> builtPages = [];
     List<TextSpan> currentSpans = [];
 
     final TextStyle textStyle = GoogleFonts.amiri(
       fontSize: textSize,
       height: 2.0,
-      color:
-          Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey[100]
-              : Colors.grey[900],
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.grey[100]
+          : Colors.grey[900],
+    );
+
+    // Special style for Bismillah
+    final bismillahStyle = GoogleFonts.amiri(
+      fontSize: textSize * 1.2,
+      height: 2.5,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.tealAccent[100]
+          : Colors.teal[800],
+      fontWeight: FontWeight.bold,
     );
 
     final screenSize = MediaQuery.of(context).size;
-    final screenWidth =
-        screenSize.width -
-        48.0; // Account for horizontal padding (24px each side)
+    final screenWidth = screenSize.width - 48.0;
 
-    // Calculate available height by subtracting:
-    // - Bottom bar height
-    // - Bottom bar spacing
-    // - Vertical padding (top + bottom)
-    // - App bar height
-    // - Status bar height
-    final availableHeight =
-        screenSize.height -
+    // Calculate available height
+    final availableHeight = screenSize.height -
         bottomBarHeight -
         bottomBarSpacing -
         verticalPadding -
         kToolbarHeight -
         MediaQuery.of(context).padding.top;
 
-    for (int i = startVerse; i <= verseCount; i++) {
-      String verse =
-          quran.getVerse(widget.surahNumber, i, verseEndSymbol: true).trim();
-      currentSpans.add(TextSpan(text: '$verse ', style: textStyle));
+    // Add Bismillah at the beginning of the surah (except for At-Tawbah)
+    if (showBismillah && widget.surahNumber != 1) {
+      currentSpans.add(TextSpan(
+        text: '${quran.basmala}\n\n',
+        style: bismillahStyle,
+      ));
+    }
 
+    // Process all verses starting from 1
+    for (int i = 1; i <= verseCount; i++) {
+      // Get the verse text
+      String verse = quran.getVerse(widget.surahNumber, i, verseEndSymbol: true).trim();
+      
+      // Add the verse to current spans with a space after each verse
+      currentSpans.add(TextSpan(
+        text: '$verse ',
+        style: textStyle,
+      ));
+
+      // Check if we need to create a new page
       final tp = TextPainter(
         text: TextSpan(children: currentSpans),
         textDirection: ui.TextDirection.rtl,
@@ -594,12 +608,21 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
       tp.layout(maxWidth: screenWidth - 64);
 
-      // Check if current spans exceed available height or if it's the last verse
+      // If current content exceeds available height or it's the last verse
       if (tp.height > availableHeight || i == verseCount) {
         if (currentSpans.isNotEmpty) {
           builtPages.add(_buildQuranPage(currentSpans));
+          
           // Start a new page with the current verse if it caused overflow
-          currentSpans = [TextSpan(text: '$verse ', style: textStyle)];
+          currentSpans = [];
+          
+          // If there are more verses, add the current verse that didn't fit
+          if (i < verseCount) {
+            currentSpans.add(TextSpan(
+              text: '$verse ',
+              style: textStyle,
+            ));
+          }
         }
       }
     }
@@ -631,21 +654,45 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             ),
           ],
         ),
-        child: SelectableText.rich(
-          TextSpan(
-            children:
-                spans.map((span) {
-                  return TextSpan(
-                    text: span.text,
-                    style: GoogleFonts.amiri(
-                      fontSize: textSize,
-                      height: 2.0,
-                      color: isDark ? Colors.grey[100] : Colors.grey[900],
-                    ),
-                  );
-                }).toList(),
-          ),
-          textAlign: TextAlign.justify,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (spans.isNotEmpty && spans.first.text?.contains(quran.basmala) == true)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+                child: Text(
+                  quran.basmala,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.amiri(
+                    fontSize: textSize * 1.3,
+                    height: 2.0,
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: SelectableText.rich(
+                TextSpan(
+                  children: spans.map((span) {
+                    // Skip the bismillah span as we're showing it separately
+                    if (span.text?.contains(quran.basmala) == true) {
+                      return const TextSpan(text: '');
+                    }
+                    return TextSpan(
+                      text: span.text,
+                      style: GoogleFonts.amiri(
+                        fontSize: textSize,
+                        height: 2.0,
+                        color: isDark ? Colors.grey[100] : Colors.grey[900],
+                      ),
+                    );
+                  }).toList(),
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+          ],
         ),
       ),
     );
