@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 class SettingsMenu extends StatefulWidget {
   final double initialTextSize;
   final ValueChanged<double> onTextSizeChanged;
+  final double initialLineHeight;
+  final ValueChanged<double>? onLineHeightChanged;
   final VoidCallback? onDarkModeToggle;
   final bool isDarkMode;
 
@@ -11,6 +13,8 @@ class SettingsMenu extends StatefulWidget {
     Key? key,
     required this.initialTextSize,
     required this.onTextSizeChanged,
+    this.initialLineHeight = 1.2,
+    this.onLineHeightChanged,
     this.onDarkModeToggle,
     this.isDarkMode = false,
   }) : super(key: key);
@@ -29,6 +33,21 @@ class _SettingsMenuState extends State<SettingsMenu> {
   }
 
   // Dark mode state is now managed by the parent widget
+
+  // Calculate line height based on font size (smaller font = smaller line height)
+  double _calculateLineHeight(double fontSize) {
+    // Base line height is 1.0 for default font size (24)
+    // Line height decreases as font size decreases
+    final baseFontSize = 24.0;
+    final minLineHeight = 0.8;
+    final maxLineHeight = 1.2;
+
+    // Calculate proportional line height
+    double lineHeight = 1.0 * (fontSize / baseFontSize);
+
+    // Ensure line height stays within reasonable bounds
+    return lineHeight.clamp(minLineHeight, maxLineHeight);
+  }
 
   void _showTextSizeDialog() {
     showDialog(
@@ -49,15 +68,17 @@ class _SettingsMenuState extends State<SettingsMenu> {
                   const Divider(height: 1),
                   Slider(
                     value: _currentTextSize,
-                    min: 20,
-                    max: 40,
+                    min: 16,
+                    max: 32,
                     divisions: 20,
                     label: _currentTextSize.round().toString(),
                     onChanged: (value) {
+                      final newLineHeight = _calculateLineHeight(value);
                       setState(() {
                         _currentTextSize = value;
                       });
                       widget.onTextSizeChanged(value);
+                      widget.onLineHeightChanged?.call(newLineHeight);
                     },
                   ),
                   const Row(
@@ -199,16 +220,15 @@ class _SettingsMenuState extends State<SettingsMenu> {
                           widget.isDarkMode
                               ? Icons.light_mode
                               : Icons.dark_mode,
-                          color: isDark
-                              ? Colors.tealAccent[200]
-                              : Theme.of(context).primaryColor,
+                          color:
+                              isDark
+                                  ? Colors.tealAccent[200]
+                                  : Theme.of(context).primaryColor,
                           size: 22,
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          widget.isDarkMode
-                              ? 'الوضع النهاري'
-                              : 'الوضع الليلي',
+                          widget.isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي',
                           style: TextStyle(
                             fontSize: 16,
                             color: isDark ? Colors.white : Colors.grey[900],
@@ -221,12 +241,16 @@ class _SettingsMenuState extends State<SettingsMenu> {
                           onChanged: (_) {
                             widget.onDarkModeToggle?.call();
                           },
-                          activeColor: isDark
-                              ? Colors.tealAccent[200]
-                              : Theme.of(context).primaryColor,
-                          activeTrackColor: isDark
-                              ? Colors.tealAccent.withOpacity(0.5)
-                              : Theme.of(context).primaryColor.withOpacity(0.5),
+                          activeColor:
+                              isDark
+                                  ? Colors.tealAccent[200]
+                                  : Theme.of(context).primaryColor,
+                          activeTrackColor:
+                              isDark
+                                  ? Colors.tealAccent.withOpacity(0.5)
+                                  : Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.5),
                         ),
                       ],
                     ),

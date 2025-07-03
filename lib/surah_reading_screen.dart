@@ -6,10 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio/just_audio.dart' as ja;
 import 'package:haffiz/widgets/settings_menu.dart';
 
 class SurahReadingScreen extends StatefulWidget {
@@ -57,69 +55,73 @@ class _KidFriendlyButton extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color:
-                    isHighlighted
-                        ? (highlightColor ?? Theme.of(context).primaryColor)
-                            .withOpacity(0.2)
-                        : Colors.grey[100]?.withOpacity(0.5),
-                shape: BoxShape.circle,
-                border: Border.all(
+        GestureDetector(
+          onTap: isEnabled ? onPressed : null,
+          child: Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
                   color:
                       isHighlighted
                           ? (highlightColor ?? Theme.of(context).primaryColor)
-                          : Colors.grey[300]!,
-                  width: 2,
+                              .withOpacity(0.2)
+                          : Colors.grey[100]?.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color:
+                        isHighlighted
+                            ? (highlightColor ?? Theme.of(context).primaryColor)
+                            : Colors.grey[300]!,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    if (isHighlighted)
+                      BoxShadow(
+                        color: (highlightColor ??
+                                Theme.of(context).primaryColor)
+                            .withOpacity(0.3),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                  ],
                 ),
-                boxShadow: [
-                  if (isHighlighted)
-                    BoxShadow(
-                      color: (highlightColor ?? Theme.of(context).primaryColor)
-                          .withOpacity(0.3),
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color:
-                    isHighlighted
-                        ? (highlightColor ?? Theme.of(context).primaryColor)
-                        : isEnabled
-                        ? iconColor
-                        : Colors.grey[400],
-              ),
-            ),
-            if (showCounter && counter != null)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.orange,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    counter!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color:
+                      isHighlighted
+                          ? (highlightColor ?? Theme.of(context).primaryColor)
+                          : isEnabled
+                          ? iconColor
+                          : Colors.grey[400],
                 ),
               ),
-          ],
+              if (showCounter && counter != null)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      counter!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -138,7 +140,8 @@ class _KidFriendlyButton extends StatelessWidget {
 class _SurahReadingScreenState extends State<SurahReadingScreen> {
   List<Widget> pages = [];
   final PageController _pageController = PageController();
-  double textSize = 28.0; // Add text size state
+  double textSize = 24.0; // Reduced default font size
+  double lineHeight = 1.0; // Reduced default line height
   bool _isRecording = false; // Track recording state
 
   // Audio recording and playback
@@ -504,19 +507,32 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     setState(() {
       textSize = newSize;
       pages = []; // Clear pages to force rebuild
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _buildPages(); // Rebuild pages with new text size
-      });
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _buildPages(); // Rebuild pages with new text size
     });
   }
 
-  // Height constants for layout calculations
-  static const double bottomBarHeight =
-      120.0; // Increased height for kid-friendly design
-  static const double verticalPadding =
-      24.0 * 2; // Top and bottom padding of the page
-  static const double bottomBarSpacing =
-      16.0; // Space between content and bottom bar
+  void _updateLineHeight(double newLineHeight) {
+    setState(() {
+      lineHeight = newLineHeight;
+      pages = []; // Clear pages to force rebuild
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _buildPages(); // Rebuild pages with new line height
+    });
+  }
+
+  Widget _buildSettingsMenu() {
+    return SettingsMenu(
+      initialTextSize: textSize,
+      initialLineHeight: lineHeight,
+      onTextSizeChanged: _updateTextSize,
+      onLineHeightChanged: _updateLineHeight,
+      onDarkModeToggle: widget.toggleDarkMode,
+      isDarkMode: widget.isDarkMode,
+    );
+  }
 
   // Build a kid-friendly button with icon and label
   Widget _buildKidFriendlyButton({
@@ -545,86 +561,54 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   void _buildPages() {
-    final verseCount = quran.getVerseCount(widget.surahNumber);
-    final bool showBismillah = widget.surahNumber != 9; // Show Bismillah for all surahs except At-Tawbah (9)
-    
-    List<Widget> builtPages = [];
-    List<TextSpan> currentSpans = [];
+    final isSurah1 = widget.surahNumber == 1;
+    final isSurah9 = widget.surahNumber == 9;
 
+    List<Widget> builtPages = [];
     final TextStyle textStyle = GoogleFonts.amiri(
       fontSize: textSize,
-      height: 2.0,
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Colors.grey[100]
-          : Colors.grey[900],
+      height: lineHeight,
+      color:
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey[100]
+              : Colors.grey[900],
     );
 
-    // Special style for Bismillah
-    final bismillahStyle = GoogleFonts.amiri(
-      fontSize: textSize * 1.2,
-      height: 2.5,
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Colors.tealAccent[100]
-          : Colors.teal[800],
-      fontWeight: FontWeight.bold,
-    );
+    final surahPages = quran.getSurahPages(widget.surahNumber);
 
-    final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width - 48.0;
-
-    // Calculate available height
-    final availableHeight = screenSize.height -
-        bottomBarHeight -
-        bottomBarSpacing -
-        verticalPadding -
-        kToolbarHeight -
-        MediaQuery.of(context).padding.top;
-
-    // Add Bismillah at the beginning of the surah (except for At-Tawbah)
-    if (showBismillah && widget.surahNumber != 1) {
-      currentSpans.add(TextSpan(
-        text: '${quran.basmala}\n\n',
-        style: bismillahStyle,
-      ));
-    }
-
-    // Process all verses starting from 1
-    for (int i = 1; i <= verseCount; i++) {
-      // Get the verse text
-      String verse = quran.getVerse(widget.surahNumber, i, verseEndSymbol: true).trim();
-      
-      // Add the verse to current spans with a space after each verse
-      currentSpans.add(TextSpan(
-        text: '$verse ',
-        style: textStyle,
-      ));
-
-      // Check if we need to create a new page
-      final tp = TextPainter(
-        text: TextSpan(children: currentSpans),
-        textDirection: ui.TextDirection.rtl,
-        textAlign: TextAlign.justify,
+    for (int pageNum in surahPages) {
+      final pageData = quran.getPageData(pageNum);
+      final pageSpans = <TextSpan>[];
+      final pageEntries = pageData.where(
+        (entry) => entry['surah'] == widget.surahNumber,
       );
 
-      tp.layout(maxWidth: screenWidth - 64);
+      for (var entry in pageEntries) {
+        final start = entry['start'];
+        final end = entry['end'];
 
-      // If current content exceeds available height or it's the last verse
-      if (tp.height > availableHeight || i == verseCount) {
-        if (currentSpans.isNotEmpty) {
-          builtPages.add(_buildQuranPage(currentSpans));
-          
-          // Start a new page with the current verse if it caused overflow
-          currentSpans = [];
-          
-          // If there are more verses, add the current verse that didn't fit
-          if (i < verseCount) {
-            currentSpans.add(TextSpan(
-              text: '$verse ',
-              style: textStyle,
-            ));
+        for (int i = start; i <= end; i++) {
+          String verse =
+              quran
+                  .getVerse(widget.surahNumber, i, verseEndSymbol: true)
+                  .replaceAll(
+                    RegExp(r'\s+'),
+                    ' ',
+                  ) // Normalize internal whitespace
+                  .replaceAll('\u200f', '') // Remove RTL marks
+                  .trim();
+
+          if (i == 1 && !isSurah1 && !isSurah9) {
+            pageSpans.add(
+              TextSpan(text: '${quran.basmala} ', style: textStyle),
+            );
           }
+
+          pageSpans.add(TextSpan(text: '$verse ', style: textStyle));
         }
       }
+
+      builtPages.add(_buildQuranPage(pageSpans));
     }
 
     setState(() {
@@ -657,15 +641,16 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (spans.isNotEmpty && spans.first.text?.contains(quran.basmala) == true)
+            if (spans.isNotEmpty &&
+                spans.first.text?.contains(quran.basmala) == true)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
                 child: Text(
                   quran.basmala,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.amiri(
-                    fontSize: textSize * 1.3,
-                    height: 2.0,
+                    fontSize: textSize,
+                    height: lineHeight,
                     color: Colors.green[700],
                     fontWeight: FontWeight.bold,
                   ),
@@ -674,20 +659,21 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             Expanded(
               child: SelectableText.rich(
                 TextSpan(
-                  children: spans.map((span) {
-                    // Skip the bismillah span as we're showing it separately
-                    if (span.text?.contains(quran.basmala) == true) {
-                      return const TextSpan(text: '');
-                    }
-                    return TextSpan(
-                      text: span.text,
-                      style: GoogleFonts.amiri(
-                        fontSize: textSize,
-                        height: 2.0,
-                        color: isDark ? Colors.grey[100] : Colors.grey[900],
-                      ),
-                    );
-                  }).toList(),
+                  children:
+                      spans.map((span) {
+                        // Skip the bismillah span as we're showing it separately
+                        if (span.text?.contains(quran.basmala) == true) {
+                          return const TextSpan(text: '');
+                        }
+                        return TextSpan(
+                          text: span.text,
+                          style: GoogleFonts.amiri(
+                            fontSize: textSize,
+                            height: 2.0,
+                            color: isDark ? Colors.grey[100] : Colors.grey[900],
+                          ),
+                        );
+                      }).toList(),
                 ),
                 textAlign: TextAlign.justify,
               ),
@@ -954,13 +940,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             showDialog(
               context: context,
               barrierColor: Colors.black54,
-              builder:
-                  (BuildContext context) => SettingsMenu(
-                    initialTextSize: textSize,
-                    onTextSizeChanged: _updateTextSize,
-                    onDarkModeToggle: widget.toggleDarkMode,
-                    isDarkMode: widget.isDarkMode,
-                  ),
+              builder: (BuildContext context) => _buildSettingsMenu(),
             );
           },
         ),
