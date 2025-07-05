@@ -34,10 +34,7 @@ class _MyAppState extends State<MyApp> {
           displayLarge: TextStyle(fontFamily: 'Amiri'),
           bodyLarge: TextStyle(fontFamily: 'Amiri'),
           bodyMedium: TextStyle(fontFamily: 'Amiri'),
-        ).apply(
-          bodyColor: Colors.grey[900],
-          displayColor: Colors.grey[900],
-        ),
+        ).apply(bodyColor: Colors.grey[900], displayColor: Colors.grey[900]),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green[700]!,
           primary: Colors.green[700],
@@ -58,10 +55,7 @@ class _MyAppState extends State<MyApp> {
           displayLarge: TextStyle(fontFamily: 'Amiri'),
           bodyLarge: TextStyle(fontFamily: 'Amiri'),
           bodyMedium: TextStyle(fontFamily: 'Amiri'),
-        ).apply(
-          bodyColor: Colors.grey[100],
-          displayColor: Colors.grey[100],
-        ),
+        ).apply(bodyColor: Colors.grey[100], displayColor: Colors.grey[100]),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green[800]!,
           primary: Colors.green[800],
@@ -84,9 +78,7 @@ class _MyAppState extends State<MyApp> {
       ),
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       locale: const Locale('ar'),
-      supportedLocales: const [
-        Locale('ar'),
-      ],
+      supportedLocales: const [Locale('ar')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -100,10 +92,11 @@ class _MyAppState extends State<MyApp> {
       },
       debugShowCheckedModeBanner: false,
       home: Builder(
-        builder: (context) => SurahSelectionScreen(
-          toggleDarkMode: toggleDarkMode,
-          isDarkMode: _isDarkMode,
-        ),
+        builder:
+            (context) => SurahSelectionScreen(
+              toggleDarkMode: toggleDarkMode,
+              isDarkMode: _isDarkMode,
+            ),
       ),
     );
   }
