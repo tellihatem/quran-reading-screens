@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:permission_handler/permission_handler.dart';
@@ -141,7 +142,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   List<Widget> pages = [];
   final PageController _pageController = PageController();
   double textSize = 24.0; // Reduced default font size
-  double lineHeight = 1.0; // Reduced default line height
+  double lineHeight = 1.8; // Reduced default line height
   bool _isRecording = false; // Track recording state
 
   // Audio recording and playback
@@ -515,7 +516,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   void _updateLineHeight(double newLineHeight) {
     setState(() {
-      lineHeight = newLineHeight;
+      lineHeight = 2 * newLineHeight;
       pages = []; // Clear pages to force rebuild
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -558,6 +559,31 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         counter: counter,
       ),
     );
+  }
+
+  // Handle verse tap
+  void _onVerseTap(int surahNumber, int verseNumber) {
+    // Show an alert dialog with the surah and verse numbers
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Verse Tapped'),
+          content: Text('Surah: $surahNumber\nVerse: $verseNumber'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    // Also print to console for debugging
+    print('Tapped on Surah $surahNumber, Verse $verseNumber');
   }
 
   void _buildPages() {
@@ -604,7 +630,18 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             );
           }
 
-          pageSpans.add(TextSpan(text: '$verse ', style: textStyle));
+          // Create a tappable span for each verse
+          final verseRecognizer =
+              TapGestureRecognizer()
+                ..onTap = () => _onVerseTap(widget.surahNumber, i);
+
+          pageSpans.add(
+            TextSpan(
+              text: '$verse ',
+              style: textStyle,
+              recognizer: verseRecognizer,
+            ),
+          );
         }
       }
 
@@ -657,25 +694,24 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                 ),
               ),
             Expanded(
-              child: SelectableText.rich(
-                TextSpan(
-                  children:
-                      spans.map((span) {
-                        // Skip the bismillah span as we're showing it separately
-                        if (span.text?.contains(quran.basmala) == true) {
-                          return const TextSpan(text: '');
-                        }
-                        return TextSpan(
-                          text: span.text,
-                          style: GoogleFonts.amiri(
-                            fontSize: textSize,
-                            height: 2.0,
-                            color: isDark ? Colors.grey[100] : Colors.grey[900],
-                          ),
-                        );
-                      }).toList(),
+              child: SingleChildScrollView(
+                child: RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.amiri(
+                      fontSize: textSize,
+                      height:
+                          lineHeight *
+                          2.0, // Increase line height for better readability
+                      color: isDark ? Colors.grey[100] : Colors.grey[900],
+                    ),
+                    children:
+                        spans
+                            .where((span) => span.text?.isNotEmpty == true)
+                            .toList(),
+                  ),
+                  textAlign: TextAlign.justify,
+                  textDirection: ui.TextDirection.rtl,
                 ),
-                textAlign: TextAlign.justify,
               ),
             ),
           ],
