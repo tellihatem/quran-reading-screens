@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:haffiz/widgets/settings_menu.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class SurahReadingScreen extends StatefulWidget {
   final int surahNumber;
@@ -139,6 +141,8 @@ class _KidFriendlyButton extends StatelessWidget {
 }
 
 class _SurahReadingScreenState extends State<SurahReadingScreen> {
+  Map<String, List<dynamic>> _allSurahTimings = {};
+  bool _isVersePlaying = false;
   List<Widget> pages = [];
   final PageController _pageController = PageController();
   double textSize = 24.0; // Reduced default font size
@@ -147,28 +151,64 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Audio recording and playback
   final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isRecordingInitialized = false;
   bool _versesVisible =
       true; // Track if verses should be visible during recording
+  String? _savedRecordingPath; // Path to the saved recording file
 
-  // Playback state
-  String? _savedRecordingPath;
-  bool _showPlaybackBar = false;
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  // Audio playback state
   Duration _audioDuration = Duration.zero;
   Duration _currentPosition = Duration.zero;
   StreamSubscription<Duration>? _positionSub;
   bool _isPlaying = false;
 
+  // Verse playback state
+  int? _currentlyPlayingVerse;
+  Map<int, Map<String, dynamic>> _verseTimings = {};
+  StreamSubscription<Duration>? _positionSubscription;
+  bool _isLoadingTimings = false;
+  bool _showPlaybackBar = false; // Controls visibility of the playback bar
+
+  // Load verse timings from storage or initialize empty timings
+  Future<void> _loadTimings() async {
+    if (_isLoadingTimings) return;
+
+    setState(() {
+      _isLoadingTimings = true;
+    });
+
+    try {
+      final jsonString = await rootBundle.loadString(
+        'assets/audio/timings.json',
+      );
+      final data = json.decode(jsonString);
+      _allSurahTimings = Map<String, List<dynamic>>.from(data);
+    } catch (e) {
+      print('Error loading timings: $e');
+      // Initialize with empty timings on error
+      _verseTimings = {};
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingTimings = false;
+        });
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _initRecording();
+    _loadTimings();
+    _showPlaybackBar = false; // Initialize playback bar visibility
 
     // Schedule page building after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _buildPages();
+        setState(() {});
       }
     });
   }
@@ -177,7 +217,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   void dispose() {
     _audioRecorder.dispose();
     _pageController.dispose();
-    _positionSub?.cancel();
+    _positionSubscription?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -345,7 +385,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     if (_savedRecordingPath != null) {
       try {
         final file = File(_savedRecordingPath!);
-        if (file.existsSync()) file.deleteSync();
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+        _savedRecordingPath = null;
       } catch (e) {
         debugPrint('Error deleting audio file: $e');
       }
@@ -562,28 +605,61 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   // Handle verse tap
-  void _onVerseTap(int surahNumber, int verseNumber) {
-    // Show an alert dialog with the surah and verse numbers
+  void _onVerseTap(int surahNumber, int verseNumber) async {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Verse Tapped'),
-          content: Text('Surah: $surahNumber\nVerse: $verseNumber'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+      builder:
+          (_) => AlertDialog(
+            title: Text('Tapped'),
+            content: Text(
+              'Surah: $surahNumber\nVerse in Timings: $verseNumber',
             ),
-          ],
-        );
-      },
+          ),
+    );
+    final paddedSurah = surahNumber.toString().padLeft(3, '0');
+    final audioUrl =
+        'https://download.quranicaudio.com/quran/mahmood_khaleel_al-husaree/$paddedSurah.mp3';
+
+    // Cancel previous stream if any
+    await _audioPlayer.stop();
+    _positionSubscription?.cancel();
+
+    final timings = _allSurahTimings['$surahNumber'];
+    if (timings == null) return;
+
+    final verseData = timings.firstWhere(
+      (v) => v['verse'] == verseNumber,
+      orElse: () => null,
     );
 
-    // Also print to console for debugging
-    print('Tapped on Surah $surahNumber, Verse $verseNumber');
+    if (verseData == null) return;
+
+    final int startMs = verseData['start'];
+    final int endMs = verseData['end'];
+
+    try {
+      await _audioPlayer.setUrl(audioUrl);
+      await _audioPlayer.seek(Duration(milliseconds: startMs));
+      await _audioPlayer.play();
+
+      setState(() {
+        _currentlyPlayingVerse = verseNumber;
+      });
+
+      _positionSubscription = _audioPlayer.positionStream.listen((position) {
+        final currentMs = position.inMilliseconds;
+        if (currentMs >= endMs) {
+          _audioPlayer.pause();
+          _audioPlayer.seek(Duration.zero);
+          _positionSubscription?.cancel();
+          setState(() {
+            _currentlyPlayingVerse = null;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Audio playback error: $e');
+    }
   }
 
   void _buildPages() {
@@ -624,10 +700,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   .replaceAll('\u200f', '') // Remove RTL marks
                   .trim();
 
+          // For the first verse of surahs other than 1 and 9, we'll show the Bismillah at the top of the page
+          // and remove it from the verse text if it exists
           if (i == 1 && !isSurah1 && !isSurah9) {
-            pageSpans.add(
-              TextSpan(text: '${quran.basmala} ', style: textStyle),
-            );
+            // Remove Bismillah from the beginning of the first verse if it exists
+            if (verse.startsWith(quran.basmala)) {
+              verse = verse.substring(quran.basmala.length).trim();
+            }
           }
 
           // Create a tappable span for each verse
@@ -679,7 +758,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (spans.isNotEmpty &&
-                spans.first.text?.contains(quran.basmala) == true)
+                widget.surahNumber != 1 &&
+                widget.surahNumber != 9)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
                 child: Text(
