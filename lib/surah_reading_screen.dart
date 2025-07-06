@@ -606,21 +606,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Handle verse tap
   void _onVerseTap(int surahNumber, int verseNumber) async {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text('Tapped'),
-            content: Text(
-              'Surah: $surahNumber\nVerse in Timings: $verseNumber',
-            ),
-          ),
-    );
     final paddedSurah = surahNumber.toString().padLeft(3, '0');
     final audioUrl =
         'https://download.quranicaudio.com/quran/mahmood_khaleel_al-husaree/$paddedSurah.mp3';
 
-    // Cancel previous stream if any
     await _audioPlayer.stop();
     _positionSubscription?.cancel();
 
@@ -638,20 +627,22 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     final int endMs = verseData['end'];
 
     try {
-      await _audioPlayer.setUrl(audioUrl);
-      await _audioPlayer.seek(Duration(milliseconds: startMs));
+      final clipSource = ClippingAudioSource(
+        start: Duration(milliseconds: startMs),
+        end: Duration(milliseconds: endMs),
+        child: AudioSource.uri(Uri.parse(audioUrl)),
+      );
+
+      await _audioPlayer.setAudioSource(clipSource);
       await _audioPlayer.play();
 
       setState(() {
         _currentlyPlayingVerse = verseNumber;
       });
 
-      _positionSubscription = _audioPlayer.positionStream.listen((position) {
-        final currentMs = position.inMilliseconds;
-        if (currentMs >= endMs) {
-          _audioPlayer.pause();
-          _audioPlayer.seek(Duration.zero);
-          _positionSubscription?.cancel();
+      // Optional: handle when playback ends
+      _audioPlayer.playerStateStream.listen((state) {
+        if (state.processingState == ProcessingState.completed) {
           setState(() {
             _currentlyPlayingVerse = null;
           });
