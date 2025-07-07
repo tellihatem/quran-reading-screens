@@ -710,7 +710,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         );
 
         if (verseData != null) {
-          final int startMs = verseData['start'];
+          final int startMs = verse == 1 ? 0 : verseData['start']; // Start from 0 for first verse
           final int endMs = verseData['end'];
 
           audioSources.add(
