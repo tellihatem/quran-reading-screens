@@ -715,7 +715,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         }
       }
 
-      builtPages.add(_buildQuranPage(pageSpans));
+      builtPages.add(_buildQuranPage(pageSpans, pageData));
     }
 
     setState(() {
@@ -723,7 +723,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     });
   }
 
-  Widget _buildQuranPage(List<TextSpan> spans) {
+  Widget _buildQuranPage(List<TextSpan> spans, dynamic pageData) {
     final isDark = widget.isDarkMode;
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -748,9 +748,15 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Show Basmala at the beginning of each surah (except surah 1 and 9)
             if (spans.isNotEmpty &&
                 widget.surahNumber != 1 &&
-                widget.surahNumber != 9)
+                widget.surahNumber != 9 &&
+                (pageData as List).any(
+                  (entry) =>
+                      entry['surah'] == widget.surahNumber &&
+                      entry['start'] == 1,
+                ))
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
                 child: Text(
@@ -792,35 +798,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   void _handlePageChange(int index) {
-    if (index == pages.length - 1 && widget.surahNumber < 114) {
-      Future.delayed(const Duration(milliseconds: 150), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => SurahReadingScreen(
-                  surahNumber: widget.surahNumber + 1,
-                  toggleDarkMode: widget.toggleDarkMode,
-                  isDarkMode: widget.isDarkMode,
-                ),
-          ),
-        );
-      });
-    } else if (index == 0 && widget.surahNumber > 1) {
-      Future.delayed(const Duration(milliseconds: 150), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => SurahReadingScreen(
-                  surahNumber: widget.surahNumber - 1,
-                  toggleDarkMode: widget.toggleDarkMode,
-                  isDarkMode: widget.isDarkMode,
-                ),
-          ),
-        );
-      });
-    }
+    // This method now only handles page changes within the current surah
+    // Navigation between surahs is disabled
+    // You can add any additional page change logic here if needed
   }
 
   // Get dark mode state from widget
@@ -1014,20 +994,23 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       try {
                         int? currentPageIndex = _pageController.page?.round();
                         if (currentPageIndex != null) {
-                          List<int> surahPages = quran.getSurahPages(widget.surahNumber);
-                          
-                          if (currentPageIndex >= 0 && currentPageIndex < surahPages.length) {
+                          List<int> surahPages = quran.getSurahPages(
+                            widget.surahNumber,
+                          );
+
+                          if (currentPageIndex >= 0 &&
+                              currentPageIndex < surahPages.length) {
                             int currentQuranPage = surahPages[currentPageIndex];
                             var pageData = quran.getPageData(currentQuranPage);
-                            
+
                             if (pageData.isNotEmpty) {
                               var firstVerse = pageData.first;
                               var lastVerse = pageData.last;
-                              
+
                               int surahNumber = firstVerse['surah'];
                               int firstVerseNumber = firstVerse['start'];
                               int lastVerseNumber = lastVerse['end'];
-                              
+
                               // Show popup dialog with the information
                               if (mounted) {
                                 showDialog(
@@ -1036,30 +1019,45 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                                     return Directionality(
                                       textDirection: ui.TextDirection.rtl,
                                       child: AlertDialog(
-                                        title: const Text('معلومات الصفحة', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+                                        title: const Text(
+                                          'معلومات الصفحة',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                         content: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
                                               'سورة ${quran.getSurahNameArabic(surahNumber)}',
-                                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                               textAlign: TextAlign.center,
                                             ),
                                             const SizedBox(height: 10),
                                             Text(
                                               'الصفحة: $currentQuranPage',
-                                              style: const TextStyle(fontSize: 16),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                              ),
                                             ),
                                             const SizedBox(height: 5),
                                             Text(
                                               'الآيات: من $firstVerseNumber إلى $lastVerseNumber',
-                                              style: const TextStyle(fontSize: 16),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                              ),
                                             ),
                                           ],
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.of(context).pop(),
+                                            onPressed:
+                                                () =>
+                                                    Navigator.of(context).pop(),
                                             child: const Text('حسناً'),
                                           ),
                                         ],
@@ -1078,10 +1076,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 title: const Text('خطأ'),
-                                content: const Text('حدث خطأ في تحميل بيانات الصفحة'),
+                                content: const Text(
+                                  'حدث خطأ في تحميل بيانات الصفحة',
+                                ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () => Navigator.of(context).pop(),
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
                                     child: const Text('حسناً'),
                                   ),
                                 ],
@@ -1091,7 +1092,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         }
                       }
                     },
-                    iconColor: isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
+                    iconColor:
+                        isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
                   ),
                 ],
               ),
