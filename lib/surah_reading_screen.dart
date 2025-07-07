@@ -162,8 +162,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   Duration _currentPosition = Duration.zero;
   StreamSubscription<Duration>? _positionSub;
   bool _isPlaying = false;
-
-  // Verse playback state
+  bool _isRepeatEnabled = false;
   int? _currentlyPlayingVerse;
   Map<int, Map<String, dynamic>> _verseTimings = {};
   StreamSubscription<Duration>? _positionSubscription;
@@ -397,23 +396,68 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       }
     }
     _audioPlayer.stop();
+    _audioPlayer.setLoopMode(LoopMode.off);
     setState(() {
       _savedRecordingPath = null;
       _showPlaybackBar = false;
       _isPlaying = false;
       _currentPosition = Duration.zero;
+      _isRepeatEnabled = false;
     });
   }
 
   // Toggle play/pause
   Future<void> _togglePlayback() async {
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      await _audioPlayer.play();
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+        setState(() {
+          _isPlaying = false;
+        });
+      } else {
+        // If we have a current page, play its verses
+        int? currentPageIndex = _pageController.page?.round();
+        if (currentPageIndex != null && 
+            currentPageIndex >= 0 && 
+            currentPageIndex < _pageVerseRanges.length) {
+          
+          final range = _pageVerseRanges[currentPageIndex];
+          if (range['surah'] != null && 
+              range['firstVerse'] != null && 
+              range['lastVerse'] != null) {
+            
+            await _playPageVerses(
+              range['surah']!,
+              range['firstVerse']!,
+              range['lastVerse']!,
+            );
+            return;
+          }
+        }
+        
+        // If no current page or error, just resume playback
+        await _audioPlayer.play();
+        setState(() {
+          _isPlaying = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error toggling playback: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ في التحكم في التشغيل')),
+        );
+      }
     }
+  }
+
+  // Toggle repeat mode
+  void _toggleRepeat() {
     setState(() {
-      _isPlaying = !_isPlaying;
+      _isRepeatEnabled = !_isRepeatEnabled;
+      _audioPlayer.setLoopMode(
+        _isRepeatEnabled ? LoopMode.all : LoopMode.off,
+      );
     });
   }
 
@@ -733,6 +777,11 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
         await _audioPlayer.setAudioSource(playlist, preload: true);
 
+        // Set the initial loop mode
+        _audioPlayer.setLoopMode(
+          _isRepeatEnabled ? LoopMode.one : LoopMode.off,
+        );
+
         // Track the current verse being played
         _audioPlayer.currentIndexStream.listen((index) {
           if (index != null && index < audioSources.length) {
@@ -750,15 +799,24 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           if (state.processingState == ProcessingState.completed) {
             setState(() {
               _currentlyPlayingVerse = null;
+              if (!_isRepeatEnabled) {
+                _isPlaying = false;
+              }
             });
           }
         });
 
         await _audioPlayer.play();
+        setState(() {
+          _isPlaying = true;
+        });
       }
     } catch (e) {
       debugPrint('Error playing page verses: $e');
       if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('حدث خطأ في تشغيل الآيات')),
         );
@@ -1109,9 +1167,12 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   _buildKidFriendlyButton(
                     icon: Icons.repeat,
                     label: 'كرر',
-                    onPressed: () {},
-                    iconColor:
-                        isDarkMode ? Colors.white70 : const Color(0xFF6C63FF),
+                    onPressed: _toggleRepeat,
+                    iconColor: _isRepeatEnabled 
+                        ? (isDarkMode ? Colors.blue[300] : Colors.blue[700])
+                        : (isDarkMode ? Colors.white70 : const Color(0xFF6C63FF)),
+                    isHighlighted: _isRepeatEnabled,
+                    highlightColor: isDarkMode ? Colors.blue[800] : Colors.blue[100],
                     showCounter: true,
                     counter: '0',
                   ),
