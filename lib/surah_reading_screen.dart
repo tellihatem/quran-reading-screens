@@ -1010,9 +1010,88 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   _buildKidFriendlyButton(
                     icon: Icons.play_arrow,
                     label: 'استمع',
-                    onPressed: () {},
-                    iconColor:
-                        isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
+                    onPressed: () async {
+                      try {
+                        int? currentPageIndex = _pageController.page?.round();
+                        if (currentPageIndex != null) {
+                          List<int> surahPages = quran.getSurahPages(widget.surahNumber);
+                          
+                          if (currentPageIndex >= 0 && currentPageIndex < surahPages.length) {
+                            int currentQuranPage = surahPages[currentPageIndex];
+                            var pageData = quran.getPageData(currentQuranPage);
+                            
+                            if (pageData.isNotEmpty) {
+                              var firstVerse = pageData.first;
+                              var lastVerse = pageData.last;
+                              
+                              int surahNumber = firstVerse['surah'];
+                              int firstVerseNumber = firstVerse['start'];
+                              int lastVerseNumber = lastVerse['end'];
+                              
+                              // Show popup dialog with the information
+                              if (mounted) {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return Directionality(
+                                      textDirection: ui.TextDirection.rtl,
+                                      child: AlertDialog(
+                                        title: const Text('معلومات الصفحة', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'سورة ${quran.getSurahNameArabic(surahNumber)}',
+                                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              'الصفحة: $currentQuranPage',
+                                              style: const TextStyle(fontSize: 16),
+                                            ),
+                                            const SizedBox(height: 5),
+                                            Text(
+                                              'الآيات: من $firstVerseNumber إلى $lastVerseNumber',
+                                              style: const TextStyle(fontSize: 16),
+                                            ),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(context).pop(),
+                                            child: const Text('حسناً'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('خطأ'),
+                                content: const Text('حدث خطأ في تحميل بيانات الصفحة'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('حسناً'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        }
+                      }
+                    },
+                    iconColor: isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
                   ),
                 ],
               ),
