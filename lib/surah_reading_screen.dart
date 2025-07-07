@@ -169,6 +169,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   StreamSubscription<Duration>? _positionSubscription;
   bool _isLoadingTimings = false;
   bool _showPlaybackBar = false; // Controls visibility of the playback bar
+  
+  // Track verse ranges for each page in our app's pagination
+  List<Map<String, int>> _pageVerseRanges = [];
 
   // Load verse timings from storage or initialize empty timings
   Future<void> _loadTimings() async {
@@ -659,6 +662,32 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     int firstVerse,
     int lastVerse,
   ) async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Verse Information'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Surah Number: $surahNumber'),
+              Text('First Verse: $firstVerse'),
+              Text('Last Verse: $lastVerse'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+
     final paddedSurah = surahNumber.toString().padLeft(3, '0');
     final audioUrl =
         'https://download.quranicaudio.com/quran/mahmood_khaleel_al-husaree/$paddedSurah.mp3';
@@ -742,6 +771,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     final isSurah9 = widget.surahNumber == 9;
 
     List<Widget> builtPages = [];
+    _pageVerseRanges = []; // Reset verse ranges
+    
     final TextStyle textStyle = GoogleFonts.amiri(
       fontSize: textSize,
       height: lineHeight,
@@ -753,16 +784,25 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
     final surahPages = quran.getSurahPages(widget.surahNumber);
 
-    for (int pageNum in surahPages) {
+    for (int pageIndex = 0; pageIndex < surahPages.length; pageIndex++) {
+      final pageNum = surahPages[pageIndex];
       final pageData = quran.getPageData(pageNum);
       final pageSpans = <TextSpan>[];
       final pageEntries = pageData.where(
         (entry) => entry['surah'] == widget.surahNumber,
       );
 
+      // Track verse range for this page
+      int? firstVerse;
+      int? lastVerse;
+
       for (var entry in pageEntries) {
         final start = entry['start'];
         final end = entry['end'];
+        
+        // Update first and last verse for this page
+        firstVerse ??= start;
+        lastVerse = end;
 
         for (int i = start; i <= end; i++) {
           String verse =
@@ -799,6 +839,22 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         }
       }
 
+      // Add the verse range for this page
+      if (firstVerse != null && lastVerse != null) {
+        _pageVerseRanges.add({
+          'surah': widget.surahNumber,
+          'firstVerse': firstVerse,
+          'lastVerse': lastVerse,
+        });
+      } else {
+        // If no verses found for this surah on this page, add a placeholder
+        _pageVerseRanges.add({
+          'surah': widget.surahNumber,
+          'firstVerse': 1,
+          'lastVerse': 1,
+        });
+      }
+      
       builtPages.add(_buildQuranPage(pageSpans, pageData));
     }
 
@@ -1085,33 +1141,26 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         }
 
                         int? currentPageIndex = _pageController.page?.round();
-                        if (currentPageIndex != null) {
-                          List<int> surahPages = quran.getSurahPages(
-                            widget.surahNumber,
-                          );
+                        if (currentPageIndex != null && 
+                            currentPageIndex >= 0 && 
+                            currentPageIndex < _pageVerseRanges.length) {
+                          
+                          final range = _pageVerseRanges[currentPageIndex];
+                          if (range['surah'] != null && 
+                              range['firstVerse'] != null && 
+                              range['lastVerse'] != null) {
+                            
+                            await _playPageVerses(
+                              range['surah']!,
+                              range['firstVerse']!,
+                              range['lastVerse']!,
+                            );
 
-                          if (currentPageIndex >= 0 && currentPageIndex < surahPages.length) {
-                            int currentQuranPage = surahPages[currentPageIndex];
-                            var pageData = quran.getPageData(currentQuranPage);
-
-                            if (pageData.isNotEmpty) {
-                              var firstVerse = pageData.first;
-                              var lastVerse = pageData.last;
-
-                              int surahNumber = firstVerse['surah'];
-                              int firstVerseNumber = firstVerse['start'];
-                              int lastVerseNumber = lastVerse['end'];
-
-                              await _playPageVerses(
-                                surahNumber,
-                                firstVerseNumber,
-                                lastVerseNumber,
-                              );
-                              
-                              setState(() {
-                                _isPlaying = true;
-                              });
-                            }
+                            setState(() {
+                              _isPlaying = true;
+                            });
+                          } else {
+                            throw Exception('بيانات الآيات غير متوفرة');
                           }
                         }
                       } catch (e) {
@@ -1127,9 +1176,12 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         }
                       }
                     },
-                    iconColor: _isPlaying 
-                        ? (isDarkMode ? Colors.red[300] : Colors.red[700])
-                        : (isDarkMode ? Colors.white70 : const Color(0xFF4CAF50)),
+                    iconColor:
+                        _isPlaying
+                            ? (isDarkMode ? Colors.red[300] : Colors.red[700])
+                            : (isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF4CAF50)),
                   ),
                 ],
               ),
