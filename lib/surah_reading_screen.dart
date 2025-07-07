@@ -640,7 +640,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         _currentlyPlayingVerse = verseNumber;
       });
 
-      // Optional: handle when playback ends
+      // Handle when playback ends
       _audioPlayer.playerStateStream.listen((state) {
         if (state.processingState == ProcessingState.completed) {
           setState(() {
@@ -650,6 +650,90 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       });
     } catch (e) {
       debugPrint('Audio playback error: $e');
+    }
+  }
+
+  // Handle playing all verses on the current page
+  Future<void> _playPageVerses(
+    int surahNumber,
+    int firstVerse,
+    int lastVerse,
+  ) async {
+    final paddedSurah = surahNumber.toString().padLeft(3, '0');
+    final audioUrl =
+        'https://download.quranicaudio.com/quran/mahmood_khaleel_al-husaree/$paddedSurah.mp3';
+
+    await _audioPlayer.stop();
+    _positionSubscription?.cancel();
+
+    final timings = _allSurahTimings['$surahNumber'];
+    if (timings == null) return;
+
+    try {
+      // Create a list to hold all verse audio sources
+      final List<AudioSource> audioSources = [];
+
+      // Add each verse's audio to the playlist
+      for (int verse = firstVerse; verse <= lastVerse; verse++) {
+        final verseData = timings.firstWhere(
+          (v) => v['verse'] == verse,
+          orElse: () => null,
+        );
+
+        if (verseData != null) {
+          final int startMs = verseData['start'];
+          final int endMs = verseData['end'];
+
+          audioSources.add(
+            ClippingAudioSource(
+              start: Duration(milliseconds: startMs),
+              end: Duration(milliseconds: endMs),
+              child: AudioSource.uri(Uri.parse(audioUrl)),
+              tag: verse, // Use verse number as tag to track current verse
+            ),
+          );
+        }
+      }
+
+      if (audioSources.isNotEmpty) {
+        // Create a concatenating audio source to play all verses in sequence
+        final playlist = ConcatenatingAudioSource(
+          useLazyPreparation: true,
+          children: audioSources,
+        );
+
+        await _audioPlayer.setAudioSource(playlist, preload: true);
+
+        // Track the current verse being played
+        _audioPlayer.currentIndexStream.listen((index) {
+          if (index != null && index < audioSources.length) {
+            final source = audioSources[index];
+            if (source is ClippingAudioSource) {
+              setState(() {
+                _currentlyPlayingVerse = source.tag as int?;
+              });
+            }
+          }
+        });
+
+        // Handle playback completion
+        _audioPlayer.playerStateStream.listen((state) {
+          if (state.processingState == ProcessingState.completed) {
+            setState(() {
+              _currentlyPlayingVerse = null;
+            });
+          }
+        });
+
+        await _audioPlayer.play();
+      }
+    } catch (e) {
+      debugPrint('Error playing page verses: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ في تشغيل الآيات')),
+        );
+      }
     }
   }
 
@@ -986,20 +1070,27 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         isDarkMode ? const Color(0xFF81C784) : Colors.red,
                   ),
 
-                  // Play Button (right)
+                  // Play/Stop Button (right)
                   _buildKidFriendlyButton(
-                    icon: Icons.play_arrow,
-                    label: 'استمع',
+                    icon: _isPlaying ? Icons.stop : Icons.play_arrow,
+                    label: _isPlaying ? 'توقف' : 'استمع',
                     onPressed: () async {
                       try {
+                        if (_isPlaying) {
+                          await _audioPlayer.stop();
+                          setState(() {
+                            _isPlaying = false;
+                          });
+                          return;
+                        }
+
                         int? currentPageIndex = _pageController.page?.round();
                         if (currentPageIndex != null) {
                           List<int> surahPages = quran.getSurahPages(
                             widget.surahNumber,
                           );
 
-                          if (currentPageIndex >= 0 &&
-                              currentPageIndex < surahPages.length) {
+                          if (currentPageIndex >= 0 && currentPageIndex < surahPages.length) {
                             int currentQuranPage = surahPages[currentPageIndex];
                             var pageData = quran.getPageData(currentQuranPage);
 
@@ -1011,89 +1102,34 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                               int firstVerseNumber = firstVerse['start'];
                               int lastVerseNumber = lastVerse['end'];
 
-                              // Show popup dialog with the information
-                              if (mounted) {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return Directionality(
-                                      textDirection: ui.TextDirection.rtl,
-                                      child: AlertDialog(
-                                        title: const Text(
-                                          'معلومات الصفحة',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'سورة ${quran.getSurahNameArabic(surahNumber)}',
-                                              style: const TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Text(
-                                              'الصفحة: $currentQuranPage',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 5),
-                                            Text(
-                                              'الآيات: من $firstVerseNumber إلى $lastVerseNumber',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () =>
-                                                    Navigator.of(context).pop(),
-                                            child: const Text('حسناً'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                );
-                              }
+                              await _playPageVerses(
+                                surahNumber,
+                                firstVerseNumber,
+                                lastVerseNumber,
+                              );
+                              
+                              setState(() {
+                                _isPlaying = true;
+                              });
                             }
                           }
                         }
                       } catch (e) {
                         if (mounted) {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('خطأ'),
-                                content: const Text(
-                                  'حدث خطأ في تحميل بيانات الصفحة',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(),
-                                    child: const Text('حسناً'),
-                                  ),
-                                ],
-                              );
-                            },
+                          setState(() {
+                            _isPlaying = false;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('حدث خطأ أثناء تشغيل الصوت: $e'),
+                            ),
                           );
                         }
                       }
                     },
-                    iconColor:
-                        isDarkMode ? Colors.white70 : const Color(0xFF4CAF50),
+                    iconColor: _isPlaying 
+                        ? (isDarkMode ? Colors.red[300] : Colors.red[700])
+                        : (isDarkMode ? Colors.white70 : const Color(0xFF4CAF50)),
                   ),
                 ],
               ),
