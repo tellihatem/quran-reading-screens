@@ -48,15 +48,20 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
           ),
         ),
         centerTitle: true,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: Icon(
+            isDark ? Icons.light_mode : Icons.dark_mode,
+            color: Colors.white,
+          ),
+          onPressed: widget.toggleDarkMode,
+          tooltip: isDark ? 'الوضع الفاتح' : 'الوضع المظلم',
+        ),
         actions: [
           IconButton(
-            icon: Icon(
-              isDark ? Icons.light_mode : Icons.dark_mode,
-              color: Colors.white,
-            ),
-            onPressed: widget.toggleDarkMode,
-            padding: const EdgeInsets.only(left: 20, right: 10),
-            tooltip: isDark ? 'الوضع الفاتح' : 'الوضع المظلم',
+            icon: const Icon(Icons.arrow_forward, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'رجوع',
           ),
         ],
       ),

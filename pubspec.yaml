@@ -43,6 +43,7 @@ dependencies:
   path_provider: ^2.1.2
   just_audio: ^0.10.4
   just_audio_background: ^0.0.1-beta.17
+  delayed_display: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/audio/timings.json
+    - assets/background/
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
