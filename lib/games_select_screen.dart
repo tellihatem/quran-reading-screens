@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui' as ui;
+import 'widgets/background_widget.dart';
 
 class GamesSelectScreen extends StatelessWidget {
   const GamesSelectScreen({super.key});
@@ -23,13 +24,7 @@ class GamesSelectScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/background/background.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
+      body: BackgroundWidget(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

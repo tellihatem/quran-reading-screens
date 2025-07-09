@@ -6,7 +6,14 @@ import 'games_select_screen.dart';
 import 'parent_control_screen.dart';
 
 class MainScreen extends StatelessWidget {
-  const MainScreen({super.key});
+  final Function() toggleDarkMode;
+  final bool isDarkMode;
+  
+  const MainScreen({
+    Key? key,
+    required this.toggleDarkMode,
+    required this.isDarkMode,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -68,8 +75,8 @@ class MainScreen extends StatelessWidget {
                             MaterialPageRoute(
                               builder:
                                   (context) => SurahSelectionScreen(
-                                    toggleDarkMode: () {},
-                                    isDarkMode: false,
+                                    toggleDarkMode: toggleDarkMode,
+                                    isDarkMode: isDarkMode,
                                   ),
                             ),
                           );

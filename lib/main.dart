@@ -28,6 +28,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'حافظ',
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         brightness: Brightness.light,
         fontFamily: 'Amiri',
@@ -77,7 +78,6 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: const [
@@ -92,7 +92,10 @@ class _MyAppState extends State<MyApp> {
         );
       },
       debugShowCheckedModeBanner: false,
-      home: const MainScreen(),
+      home: MainScreen(
+        toggleDarkMode: toggleDarkMode,
+        isDarkMode: _isDarkMode,
+      ),
     );
   }
 }
