@@ -163,6 +163,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   StreamSubscription<Duration>? _positionSub;
   bool _isPlaying = false;
   bool _isRepeatEnabled = false;
+  int _repeatCount = 0;
   int? _currentlyPlayingVerse;
   Map<int, Map<String, dynamic>> _verseTimings = {};
   StreamSubscription<Duration>? _positionSubscription;
@@ -403,6 +404,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       _isPlaying = false;
       _currentPosition = Duration.zero;
       _isRepeatEnabled = false;
+      _repeatCount = 0; // Reset the repeat counter
     });
   }
 
@@ -458,6 +460,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       _audioPlayer.setLoopMode(
         _isRepeatEnabled ? LoopMode.all : LoopMode.off,
       );
+      if (!_isRepeatEnabled) {
+        _repeatCount = 0; // Reset counter when repeat is turned off
+      }
     });
   }
 
@@ -782,9 +787,18 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           _isRepeatEnabled ? LoopMode.one : LoopMode.off,
         );
 
-        // Track the current verse being played
+        // Track the current verse being played and detect loops
+        int? lastIndex;
         _audioPlayer.currentIndexStream.listen((index) {
           if (index != null && index < audioSources.length) {
+            // If we detect a loop back to the first verse, increment counter
+            if (_isRepeatEnabled && lastIndex != null && index == 0 && lastIndex == audioSources.length - 1) {
+              setState(() {
+                _repeatCount++;
+              });
+            }
+            lastIndex = index;
+            
             final source = audioSources[index];
             if (source is ClippingAudioSource) {
               setState(() {
@@ -794,7 +808,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           }
         });
 
-        // Handle playback completion
+        // Handle playback completion when not in repeat mode
         _audioPlayer.playerStateStream.listen((state) {
           if (state.processingState == ProcessingState.completed) {
             setState(() {
@@ -834,10 +848,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     final TextStyle textStyle = GoogleFonts.amiri(
       fontSize: textSize,
       height: lineHeight,
-      color:
-          Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey[100]
-              : Colors.grey[900],
+      color: widget.isDarkMode ? Colors.grey[100] : Colors.grey[900],
     );
 
     final surahPages = quran.getSurahPages(widget.surahNumber);
@@ -1174,7 +1185,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                     isHighlighted: _isRepeatEnabled,
                     highlightColor: isDarkMode ? Colors.blue[800] : Colors.blue[100],
                     showCounter: true,
-                    counter: '0',
+                    counter: '$_repeatCount',
                   ),
 
                   // Record Button (center)
