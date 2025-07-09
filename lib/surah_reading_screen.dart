@@ -12,6 +12,7 @@ import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:haffiz/widgets/settings_menu.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SurahReadingScreen extends StatefulWidget {
   final int surahNumber;
@@ -97,15 +98,16 @@ class _KidFriendlyButton extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 32,
-                  color: isHighlighted
-                      ? (highlightColor ?? Theme.of(context).primaryColor)
-                      : isEnabled
+                  color:
+                      isHighlighted
+                          ? (highlightColor ?? Theme.of(context).primaryColor)
+                          : isEnabled
                           ? isDarkMode
                               ? Colors.white
                               : iconColor
                           : isDarkMode
-                              ? Colors.grey[600]
-                              : Colors.grey[400],
+                          ? Colors.grey[600]
+                          : Colors.grey[400],
                 ),
               ),
               if (showCounter && counter != null)
@@ -146,6 +148,47 @@ class _KidFriendlyButton extends StatelessWidget {
       ],
     );
   }
+}
+
+class WavyPainter extends CustomPainter {
+  final bool isDarkMode;
+
+  WavyPainter({required this.isDarkMode});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = isDarkMode ? Colors.black : Colors.white
+          ..style = PaintingStyle.fill;
+
+    final path = Path();
+
+    // Start from the left edge
+    path.moveTo(0, 20);
+
+    // First wave (left to middle)
+    path.quadraticBezierTo(size.width * 0.2, 0, size.width * 0.3, 20);
+
+    // Second wave (middle dip)
+    path.quadraticBezierTo(size.width * 0.4, 0, size.width * 0.5, 20);
+
+    // Third wave (right dip)
+    path.quadraticBezierTo(size.width * 0.6, 0, size.width * 0.7, 20);
+
+    // End at the right edge
+    path.quadraticBezierTo(size.width * 0.8, 0, size.width, 20);
+
+    // Close the path
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
 class _SurahReadingScreenState extends State<SurahReadingScreen> {
@@ -506,6 +549,18 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Start or stop recording
   Future<void> _toggleRecording() async {
+    if (kIsWeb) {
+      // Inform user that recording is not configured for web
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Recording is not configured for web yet.'),
+          ),
+        );
+      }
+      return;
+    }
+
     if (!_isRecordingInitialized) {
       await _initRecording();
       if (!_isRecordingInitialized) return;
@@ -698,7 +753,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
       // Handle when playback ends
       _audioPlayer.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
+        if (mounted && state.processingState == ProcessingState.completed) {
           setState(() {
             _currentlyPlayingVerse = null;
           });
@@ -820,7 +875,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
         // Handle playback completion when not in repeat mode
         _audioPlayer.playerStateStream.listen((state) {
-          if (state.processingState == ProcessingState.completed) {
+          if (mounted && state.processingState == ProcessingState.completed) {
             setState(() {
               _currentlyPlayingVerse = null;
               if (!_isRepeatEnabled) {
@@ -858,9 +913,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     final TextStyle textStyle = GoogleFonts.amiri(
       fontSize: textSize,
       height: lineHeight,
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Colors.grey[100]
-          : Colors.grey[900],
+      color:
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey[100]
+              : Colors.grey[900],
     );
 
     final surahPages = quran.getSurahPages(widget.surahNumber);
@@ -951,7 +1007,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          color:
+              isDarkMode
+                  ? Colors.black.withOpacity(0.6)
+                  : Colors.white.withOpacity(0.6),
           border: Border.all(
             color: isDarkMode ? Colors.white10 : Colors.green.shade100,
             width: 1.0,
@@ -999,7 +1058,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       fontSize: textSize,
                       height:
                           lineHeight *
-                          2.0, // Increase line height for better readability
+                          1.5, // Reduced line height for better fit
                       color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                     ),
                     children:
@@ -1041,20 +1100,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDarkMode ? Colors.white10 : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: Colors.transparent, // Fully transparent background
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1066,8 +1112,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   isDarkMode ? Colors.green[300] : Colors.green[700],
               inactiveTrackColor:
                   isDarkMode ? Colors.grey[800] : Colors.grey[300],
-              thumbColor:
-                  isDarkMode ? Colors.green[300] : Colors.green[700],
+              thumbColor: isDarkMode ? Colors.green[300] : Colors.green[700],
               overlayColor: (isDarkMode
                       ? Colors.green[300]
                       : Colors.green[700])!
@@ -1144,240 +1189,217 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       left: 0,
       right: 0,
       bottom: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDarkMode ? Colors.white10 : Colors.grey[300]!,
-              width: 1,
-            ),
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          CustomPaint(
+            size: Size(MediaQuery.of(context).size.width, 80),
+            painter: WavyPainter(isDarkMode: isDarkMode),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.transparent, // Fully transparent background
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_showPlaybackBar) _buildPlaybackBar(),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildKidFriendlyButton(
+                  icon: Icons.repeat,
+                  label: 'كرر',
+                  onPressed: _toggleRepeat,
+                  iconColor:
+                      isDarkMode ? Colors.blue[300] : const Color(0xFF6C63FF),
+                  isHighlighted: _isRepeatEnabled,
+                  highlightColor:
+                      isDarkMode ? Colors.blue[800] : Colors.blue[100],
+                  showCounter: true,
+                  counter: '$_repeatCount',
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(
-                      isDarkMode ? 0.2 : 0.1,
-                    ),
-                    blurRadius: 15,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Repeat Button with Counter (left)
-                  _buildKidFriendlyButton(
-                    icon: Icons.repeat,
-                    label: 'كرر',
-                    onPressed: _toggleRepeat,
-                    iconColor: isDarkMode
-                        ? Colors.blue[300]
-                        : const Color(0xFF6C63FF),
-                    isHighlighted: _isRepeatEnabled,
-                    highlightColor: isDarkMode ? Colors.blue[800] : Colors.blue[100],
-                    showCounter: true,
-                    counter: '$_repeatCount',
-                  ),
+                _buildKidFriendlyButton(
+                  icon: _isRecording ? Icons.stop : Icons.mic,
+                  label: _isRecording ? 'تسجيل' : 'سجل',
+                  onPressed: _toggleRecording,
+                  isHighlighted: _isRecording,
+                  highlightColor:
+                      isDarkMode ? const Color(0xFF81C784) : Colors.red,
+                  iconColor: isDarkMode ? Colors.green[300] : Colors.red,
+                ),
+                _buildKidFriendlyButton(
+                  icon: _isPlaying ? Icons.stop : Icons.play_arrow,
+                  label: _isPlaying ? 'توقف' : 'استمع',
+                  onPressed: () async {
+                    try {
+                      if (_isPlaying) {
+                        await _audioPlayer.stop();
+                        setState(() {
+                          _isPlaying = false;
+                        });
+                        return;
+                      }
 
-                  // Record Button (center)
-                  _buildKidFriendlyButton(
-                    icon: _isRecording ? Icons.stop : Icons.mic,
-                    label: _isRecording ? 'تسجيل' : 'سجل',
-                    onPressed: _toggleRecording,
-                    isHighlighted: _isRecording,
-                    highlightColor: isDarkMode
-                        ? const Color(0xFF81C784)
-                        : Colors.red,
-                  ),
-
-                  // Play/Stop Button (right)
-                  _buildKidFriendlyButton(
-                    icon: _isPlaying ? Icons.stop : Icons.play_arrow,
-                    label: _isPlaying ? 'توقف' : 'استمع',
-                    onPressed: () async {
-                      try {
-                        if (_isPlaying) {
-                          await _audioPlayer.stop();
-                          setState(() {
-                            _isPlaying = false;
-                          });
-                          return;
-                        }
-
-                        int? currentPageIndex = _pageController.page?.round();
-                        if (currentPageIndex != null &&
-                            currentPageIndex >= 0 &&
-                            currentPageIndex < _pageVerseRanges.length) {
-                          final range = _pageVerseRanges[currentPageIndex];
-                          if (range['surah'] != null &&
-                              range['firstVerse'] != null &&
-                              range['lastVerse'] != null) {
-                            await _playPageVerses(
-                              range['surah']!,
-                              range['firstVerse']!,
-                              range['lastVerse']!,
-                            );
-
-                            setState(() {
-                              _isPlaying = true;
-                            });
-                          } else {
-                            throw Exception('بيانات الآيات غير متوفرة');
-                          }
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          setState(() {
-                            _isPlaying = false;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('حدث خطأ أثناء تشغيل الصوت: $e'),
-                            ),
+                      int? currentPageIndex = _pageController.page?.round();
+                      if (currentPageIndex != null &&
+                          currentPageIndex >= 0 &&
+                          currentPageIndex < _pageVerseRanges.length) {
+                        final range = _pageVerseRanges[currentPageIndex];
+                        if (range['surah'] != null &&
+                            range['firstVerse'] != null &&
+                            range['lastVerse'] != null) {
+                          await _playPageVerses(
+                            range['surah']!,
+                            range['firstVerse']!,
+                            range['lastVerse']!,
                           );
+
+                          setState(() {
+                            _isPlaying = true;
+                          });
+                        } else {
+                          throw Exception('بيانات الآيات غير متوفرة');
                         }
                       }
-                    },
-                    iconColor: _isPlaying
-                        ? (isDarkMode ? Colors.red[300] : Colors.red[700])
-                        : (isDarkMode ? Colors.white70 : const Color(0xFF4CAF50)),
-                  ),
-                ],
-              ),
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() {
+                          _isPlaying = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('حدث خطأ أثناء تشغيل الصوت: $e'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  iconColor:
+                      _isPlaying
+                          ? (isDarkMode ? Colors.red[300] : Colors.red[700])
+                          : (isDarkMode
+                              ? Colors.white70
+                              : const Color(0xFF4CAF50)),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final verseCount = quran.getVerseCount(widget.surahNumber);
-    final surahNameAr = quran.getSurahNameArabic(widget.surahNumber);
-    final isMakki = quran.getPlaceOfRevelation(widget.surahNumber) == 'Makkah';
-
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // Define colors based on theme
-    final backgroundColor = isDarkMode ? const Color(0xFF121212) : const Color(0xFFF7FDF3);
-    final appBarColor = isDarkMode ? Colors.grey[900] : Colors.green[800];
-
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: appBarColor,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () {
-            showDialog(
-              context: context,
-              barrierColor: Colors.black54,
-              builder: (BuildContext context) => _buildSettingsMenu(),
-            );
-          },
-        ),
-        title: Column(
-          children: [
-            Text(
-              surahNameAr,
-              style: GoogleFonts.amiri(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${isMakki ? 'مكية' : 'مدنية'} • $verseCount آية',
-              style: GoogleFonts.amiri(
-                fontSize: 16,
-                color: Colors.white.withOpacity(0.9),
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_forward, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(
+            isDarkMode
+                ? 'assets/background/background_dark.png'
+                : 'assets/background/background.png',
           ),
-        ],
+          fit: BoxFit.cover,
+        ),
       ),
-      body: Stack(
-        children: [
-          // Loading state - only show when pages are empty
-          if (pages.isEmpty) ...[
-            const Center(child: CircularProgressIndicator()),
-          ] else if (!_isRecording || _versesVisible) ...[
-            // Show verses when not recording or when user chose to keep them visible during recording
-            PageView.builder(
-              controller: _pageController,
-              itemCount: pages.length,
-              reverse: false, // RIGHT swipe = next page
-              physics: const ClampingScrollPhysics(),
-              onPageChanged: _handlePageChange,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    16.0,
-                    16.0,
-                    16.0,
-                    100.0,
-                  ), // Add bottom padding for the control bar
-                  child: pages[index],
-                );
-              },
+      child: Scaffold(
+        backgroundColor:
+            Colors.transparent, // Ensure transparency to show background
+        appBar: AppBar(
+          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.green[800],
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () {
+              showDialog(
+                context: context,
+                barrierColor: Colors.black54,
+                builder: (BuildContext context) => _buildSettingsMenu(),
+              );
+            },
+          ),
+          title: Column(
+            children: [
+              Text(
+                quran.getSurahNameArabic(widget.surahNumber),
+                style: GoogleFonts.amiri(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${quran.getPlaceOfRevelation(widget.surahNumber) == 'Makkah' ? 'مكية' : 'مدنية'} • ${quran.getVerseCount(widget.surahNumber)} آية',
+                style: GoogleFonts.amiri(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+            ],
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.arrow_forward, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
-
-          // Show recording indicator only when recording and user chose to hide verses
-          if (_isRecording && !_versesVisible)
-            const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.mic, size: 48, color: Colors.red),
-                  SizedBox(height: 16),
-                  Text(
-                    'جاري التسجيل...',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'اضغط على زر الإيقاف لإنهاء التسجيل',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
+        ),
+        body: Stack(
+          children: [
+            // Loading state - only show when pages are empty
+            if (pages.isEmpty) ...[
+              const Center(child: CircularProgressIndicator()),
+            ] else if (!_isRecording || _versesVisible) ...[
+              // Show verses when not recording or when user chose to keep them visible during recording
+              PageView.builder(
+                controller: _pageController,
+                itemCount: pages.length,
+                reverse: false, // RIGHT swipe = next page
+                physics: const ClampingScrollPhysics(),
+                onPageChanged: _handlePageChange,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      16.0,
+                      16.0,
+                      16.0,
+                      100.0,
+                    ), // Add bottom padding for the control bar
+                    child: pages[index],
+                  );
+                },
               ),
-            ),
+            ],
 
-          _buildBottomBar(),
-        ],
+            // Show recording indicator only when recording and user chose to hide verses
+            if (_isRecording && !_versesVisible)
+              const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.mic, size: 48, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text(
+                      'جاري التسجيل...',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'اضغط على زر الإيقاف لإنهاء التسجيل',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+
+            _buildBottomBar(),
+          ],
+        ),
       ),
     );
   }
