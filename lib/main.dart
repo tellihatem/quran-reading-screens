@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'surah_selection_screen.dart';
 import 'dart:ui' as ui;
 import 'package:haffiz/main_screen.dart';
 
@@ -92,10 +91,7 @@ class _MyAppState extends State<MyApp> {
         );
       },
       debugShowCheckedModeBanner: false,
-      home: MainScreen(
-        toggleDarkMode: toggleDarkMode,
-        isDarkMode: _isDarkMode,
-      ),
+      home: MainScreen(toggleDarkMode: toggleDarkMode, isDarkMode: _isDarkMode),
     );
   }
 }

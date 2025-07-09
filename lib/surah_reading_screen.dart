@@ -55,6 +55,7 @@ class _KidFriendlyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -69,12 +70,16 @@ class _KidFriendlyButton extends StatelessWidget {
                       isHighlighted
                           ? (highlightColor ?? Theme.of(context).primaryColor)
                               .withOpacity(0.2)
+                          : isDarkMode
+                          ? Colors.grey[800]?.withOpacity(0.5)
                           : Colors.grey[100]?.withOpacity(0.5),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color:
                         isHighlighted
                             ? (highlightColor ?? Theme.of(context).primaryColor)
+                            : isDarkMode
+                            ? Colors.grey[600]!
                             : Colors.grey[300]!,
                     width: 2,
                   ),
@@ -92,12 +97,15 @@ class _KidFriendlyButton extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 32,
-                  color:
-                      isHighlighted
-                          ? (highlightColor ?? Theme.of(context).primaryColor)
-                          : isEnabled
-                          ? iconColor
-                          : Colors.grey[400],
+                  color: isHighlighted
+                      ? (highlightColor ?? Theme.of(context).primaryColor)
+                      : isEnabled
+                          ? isDarkMode
+                              ? Colors.white
+                              : iconColor
+                          : isDarkMode
+                              ? Colors.grey[600]
+                              : Colors.grey[400],
                 ),
               ),
               if (showCounter && counter != null)
@@ -130,7 +138,7 @@ class _KidFriendlyButton extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Theme.of(context).textTheme.bodyMedium?.color,
+            color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -169,7 +177,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   StreamSubscription<Duration>? _positionSubscription;
   bool _isLoadingTimings = false;
   bool _showPlaybackBar = false; // Controls visibility of the playback bar
-  
+
   // Track verse ranges for each page in our app's pagination
   List<Map<String, int>> _pageVerseRanges = [];
 
@@ -254,7 +262,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Show dialog to ask about hiding verses during recording
   Future<bool?> _showHideVersesDialog() async {
-    final isDark = widget.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final buttonTextColor = isDark ? Colors.white : Colors.white;
 
@@ -419,15 +427,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       } else {
         // If we have a current page, play its verses
         int? currentPageIndex = _pageController.page?.round();
-        if (currentPageIndex != null && 
-            currentPageIndex >= 0 && 
+        if (currentPageIndex != null &&
+            currentPageIndex >= 0 &&
             currentPageIndex < _pageVerseRanges.length) {
-          
           final range = _pageVerseRanges[currentPageIndex];
-          if (range['surah'] != null && 
-              range['firstVerse'] != null && 
+          if (range['surah'] != null &&
+              range['firstVerse'] != null &&
               range['lastVerse'] != null) {
-            
             await _playPageVerses(
               range['surah']!,
               range['firstVerse']!,
@@ -436,7 +442,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
             return;
           }
         }
-        
+
         // If no current page or error, just resume playback
         await _audioPlayer.play();
         setState(() {
@@ -457,9 +463,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   void _toggleRepeat() {
     setState(() {
       _isRepeatEnabled = !_isRepeatEnabled;
-      _audioPlayer.setLoopMode(
-        _isRepeatEnabled ? LoopMode.all : LoopMode.off,
-      );
+      _audioPlayer.setLoopMode(_isRepeatEnabled ? LoopMode.all : LoopMode.off);
       if (!_isRepeatEnabled) {
         _repeatCount = 0; // Reset counter when repeat is turned off
       }
@@ -759,7 +763,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         );
 
         if (verseData != null) {
-          final int startMs = verse == 1 ? 0 : verseData['start']; // Start from 0 for first verse
+          final int startMs =
+              verse == 1
+                  ? 0
+                  : verseData['start']; // Start from 0 for first verse
           final int endMs = verseData['end'];
 
           audioSources.add(
@@ -792,13 +799,16 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         _audioPlayer.currentIndexStream.listen((index) {
           if (index != null && index < audioSources.length) {
             // If we detect a loop back to the first verse, increment counter
-            if (_isRepeatEnabled && lastIndex != null && index == 0 && lastIndex == audioSources.length - 1) {
+            if (_isRepeatEnabled &&
+                lastIndex != null &&
+                index == 0 &&
+                lastIndex == audioSources.length - 1) {
               setState(() {
                 _repeatCount++;
               });
             }
             lastIndex = index;
-            
+
             final source = audioSources[index];
             if (source is ClippingAudioSource) {
               setState(() {
@@ -844,11 +854,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
     List<Widget> builtPages = [];
     _pageVerseRanges = []; // Reset verse ranges
-    
+
     final TextStyle textStyle = GoogleFonts.amiri(
       fontSize: textSize,
       height: lineHeight,
-      color: widget.isDarkMode ? Colors.grey[100] : Colors.grey[900],
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.grey[100]
+          : Colors.grey[900],
     );
 
     final surahPages = quran.getSurahPages(widget.surahNumber);
@@ -868,7 +880,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
       for (var entry in pageEntries) {
         final start = entry['start'];
         final end = entry['end'];
-        
+
         // Update first and last verse for this page
         firstVerse ??= start;
         lastVerse = end;
@@ -923,7 +935,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           'lastVerse': 1,
         });
       }
-      
+
       builtPages.add(_buildQuranPage(pageSpans, pageData));
     }
 
@@ -933,21 +945,21 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   Widget _buildQuranPage(List<TextSpan> spans, dynamic pageData) {
-    final isDark = widget.isDarkMode;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           border: Border.all(
-            color: isDark ? Colors.white10 : Colors.green.shade100,
+            color: isDarkMode ? Colors.white10 : Colors.green.shade100,
             width: 1.0,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black54 : Colors.grey.withOpacity(0.2),
+              color: isDarkMode ? Colors.black54 : Colors.grey.withOpacity(0.2),
               blurRadius: 15,
               spreadRadius: 1,
               offset: const Offset(0, 4),
@@ -974,7 +986,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   style: GoogleFonts.amiri(
                     fontSize: textSize,
                     height: lineHeight,
-                    color: Colors.green[700],
+                    color: isDarkMode ? Colors.green[300] : Colors.green[700],
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -988,7 +1000,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       height:
                           lineHeight *
                           2.0, // Increase line height for better readability
-                      color: isDark ? Colors.grey[100] : Colors.grey[900],
+                      color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
                     ),
                     children:
                         spans
@@ -1012,24 +1024,20 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     // You can add any additional page change logic here if needed
   }
 
-  // Get dark mode state from widget
-  bool get isDarkMode => widget.isDarkMode;
-
   @override
-  void didUpdateWidget(SurahReadingScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Rebuild pages when theme changes
-    if (oldWidget.isDarkMode != widget.isDarkMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _buildPages();
-        }
-      });
-    }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Rebuild Quran pages when theme changes (e.g., dark/light mode)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _buildPages();
+      }
+    });
   }
 
   // Build the playback control bar
   Widget _buildPlaybackBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
@@ -1058,7 +1066,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   isDarkMode ? Colors.green[300] : Colors.green[700],
               inactiveTrackColor:
                   isDarkMode ? Colors.grey[800] : Colors.grey[300],
-              thumbColor: isDarkMode ? Colors.green[300] : Colors.green[700],
+              thumbColor:
+                  isDarkMode ? Colors.green[300] : Colors.green[700],
               overlayColor: (isDarkMode
                       ? Colors.green[300]
                       : Colors.green[700])!
@@ -1130,6 +1139,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   // Build the bottom control bar
   Widget _buildBottomBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Positioned(
       left: 0,
       right: 0,
@@ -1165,7 +1175,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.1),
+                    color: Colors.black.withOpacity(
+                      isDarkMode ? 0.2 : 0.1,
+                    ),
                     blurRadius: 15,
                     offset: const Offset(0, -5),
                   ),
@@ -1179,9 +1191,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                     icon: Icons.repeat,
                     label: 'كرر',
                     onPressed: _toggleRepeat,
-                    iconColor: _isRepeatEnabled 
-                        ? (isDarkMode ? Colors.blue[300] : Colors.blue[700])
-                        : (isDarkMode ? Colors.white70 : const Color(0xFF6C63FF)),
+                    iconColor: isDarkMode
+                        ? Colors.blue[300]
+                        : const Color(0xFF6C63FF),
                     isHighlighted: _isRepeatEnabled,
                     highlightColor: isDarkMode ? Colors.blue[800] : Colors.blue[100],
                     showCounter: true,
@@ -1194,8 +1206,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                     label: _isRecording ? 'تسجيل' : 'سجل',
                     onPressed: _toggleRecording,
                     isHighlighted: _isRecording,
-                    highlightColor:
-                        isDarkMode ? const Color(0xFF81C784) : Colors.red,
+                    highlightColor: isDarkMode
+                        ? const Color(0xFF81C784)
+                        : Colors.red,
                   ),
 
                   // Play/Stop Button (right)
@@ -1213,15 +1226,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         }
 
                         int? currentPageIndex = _pageController.page?.round();
-                        if (currentPageIndex != null && 
-                            currentPageIndex >= 0 && 
+                        if (currentPageIndex != null &&
+                            currentPageIndex >= 0 &&
                             currentPageIndex < _pageVerseRanges.length) {
-                          
                           final range = _pageVerseRanges[currentPageIndex];
-                          if (range['surah'] != null && 
-                              range['firstVerse'] != null && 
+                          if (range['surah'] != null &&
+                              range['firstVerse'] != null &&
                               range['lastVerse'] != null) {
-                            
                             await _playPageVerses(
                               range['surah']!,
                               range['firstVerse']!,
@@ -1248,12 +1259,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         }
                       }
                     },
-                    iconColor:
-                        _isPlaying
-                            ? (isDarkMode ? Colors.red[300] : Colors.red[700])
-                            : (isDarkMode
-                                ? Colors.white70
-                                : const Color(0xFF4CAF50)),
+                    iconColor: _isPlaying
+                        ? (isDarkMode ? Colors.red[300] : Colors.red[700])
+                        : (isDarkMode ? Colors.white70 : const Color(0xFF4CAF50)),
                   ),
                 ],
               ),
@@ -1270,11 +1278,11 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     final surahNameAr = quran.getSurahNameArabic(widget.surahNumber);
     final isMakki = quran.getPlaceOfRevelation(widget.surahNumber) == 'Makkah';
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     // Define colors based on theme
-    final backgroundColor =
-        isDarkMode ? const Color(0xFF121212) : const Color(0xFFF7FDF3);
+    final backgroundColor = isDarkMode ? const Color(0xFF121212) : const Color(0xFFF7FDF3);
     final appBarColor = isDarkMode ? Colors.grey[900] : Colors.green[800];
-    // Theme colors - used in _buildQuranPage
 
     return Scaffold(
       backgroundColor: backgroundColor,
