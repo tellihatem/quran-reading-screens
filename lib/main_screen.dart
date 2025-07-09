@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:delayed_display/delayed_display.dart';
 import 'surah_selection_screen.dart';
+import 'games_select_screen.dart';
+import 'parent_control_screen.dart';
 
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
@@ -79,7 +81,14 @@ class MainScreen extends StatelessWidget {
                         icon: Icons.games,
                         text: 'العاب',
                         color: const Color(0xFFFF9800),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GamesSelectScreen(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
                       _buildAnimatedButton(
@@ -87,7 +96,14 @@ class MainScreen extends StatelessWidget {
                         icon: Icons.lock,
                         text: 'وضع الوالدين',
                         color: const Color(0xFF607D8B),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ParentControlScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
