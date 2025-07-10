@@ -45,7 +45,7 @@ dependencies:
   just_audio: ^0.10.4
   just_audio_background: ^0.0.1-beta.17
   delayed_display: ^2.0.0
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

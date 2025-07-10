@@ -4,6 +4,8 @@ import 'package:delayed_display/delayed_display.dart';
 import 'surah_selection_screen.dart';
 import 'games_select_screen.dart';
 import 'parent_control_screen.dart';
+import 'widgets/pin_input_dialog.dart';
+import 'services/shared_prefs_service.dart';
 
 class MainScreen extends StatelessWidget {
   final Function() toggleDarkMode;
@@ -103,14 +105,7 @@ class MainScreen extends StatelessWidget {
                         icon: Icons.lock,
                         text: 'وضع الوالدين',
                         color: const Color(0xFF607D8B),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ParentControlScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: () => _handleParentControlAccess(context),
                       ),
                     ],
                   ),
@@ -198,5 +193,51 @@ class MainScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Handle parent control access with PIN check
+  Future<void> _handleParentControlAccess(BuildContext context) async {
+    final hasPin = await PinStorage.hasPin();
+    
+    if (hasPin) {
+      // Show PIN input dialog
+      final enteredPin = await showPinInputDialog(
+        context: context,
+        title: 'أدخل الرمز السري',
+        description: 'الرجاء إدخال الرمز السري للوصول إلى وضع الوالدين',
+      );
+
+      if (enteredPin != null) {
+        final isCorrect = await PinStorage.getPin() == enteredPin;
+        
+        if (isCorrect && context.mounted) {
+          // Correct PIN, navigate to parent control
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ParentControlScreen(),
+            ),
+          );
+        } else if (context.mounted) {
+          // Wrong PIN, show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('الرمز السري غير صحيح', textAlign: TextAlign.center),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      // No PIN set, navigate directly
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ParentControlScreen(),
+          ),
+        );
+      }
+    }
   }
 }

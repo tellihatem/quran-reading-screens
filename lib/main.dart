@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'dart:ui' as ui;
 import 'package:haffiz/main_screen.dart';
+import 'package:haffiz/services/shared_prefs_service.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize SharedPreferences service
+  sharedPrefsService.init();
+  
   runApp(const MyApp());
 }
 
