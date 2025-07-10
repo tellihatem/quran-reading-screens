@@ -15,22 +15,26 @@ class BackgroundWidget extends StatelessWidget {
         ? 'assets/background/background_dark.png'
         : 'assets/background/background.png';
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      child: Stack(
-        children: [
-          // Background Image
-          Positioned.fill(
-            child: Image.asset(
-              backgroundImage,
-              fit: BoxFit.cover,
-              // This ensures the image is rebuilt when the theme changes
-              key: ValueKey<String>(backgroundImage),
+    return SizedBox.expand(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        child: Stack(
+          children: [
+            // Background Image
+            Positioned.fill(
+              child: Image.asset(
+                backgroundImage,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                // This ensures the image is rebuilt when the theme changes
+                key: ValueKey<String>(backgroundImage),
+              ),
             ),
-          ),
-          // Content
-          child,
-        ],
+            // Content
+            child,
+          ],
+        ),
       ),
     );
   }

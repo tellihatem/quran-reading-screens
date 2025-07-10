@@ -45,7 +45,7 @@ class _MyAppState extends State<MyApp> {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF7FDF3),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2E7D32),
+          backgroundColor: Color(0xFF2196F3),
           foregroundColor: Colors.white,
         ),
       ),

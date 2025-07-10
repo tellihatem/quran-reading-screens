@@ -1305,7 +1305,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         backgroundColor:
             Colors.transparent, // Ensure transparency to show background
         appBar: AppBar(
-          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.green[800],
+          backgroundColor:
+              isDarkMode ? Colors.grey[900] : const Color(0xFF2196F3),
           elevation: 0,
           automaticallyImplyLeading: false,
           leading: IconButton(
