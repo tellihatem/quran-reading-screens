@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'widgets/background_widget.dart';
 import 'widgets/pin_input_dialog.dart';
+import 'widgets/pin_input_dialog.dart' show PinStorage;
 
 const double _kVerticalPadding = 20.0;
 const double _kMaxContentWidth = 500.0;
@@ -189,8 +190,8 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
                                 );
                                 
                                 if (newPin != null && newPin.length == 4) {
-                                  // TODO: Implement password change logic here
-                                  // For example: await _authService.changePin(newPin);
+                                  // Save the new PIN
+                                  await PinStorage.savePin(newPin);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

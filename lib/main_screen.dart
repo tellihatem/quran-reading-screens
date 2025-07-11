@@ -199,37 +199,8 @@ class MainScreen extends StatelessWidget {
   Future<void> _handleParentControlAccess(BuildContext context) async {
     final hasPin = await PinStorage.hasPin();
     
-    if (hasPin) {
-      // Show PIN input dialog
-      final enteredPin = await showPinInputDialog(
-        context: context,
-        title: 'أدخل الرمز السري',
-        description: 'الرجاء إدخال الرمز السري للوصول إلى وضع الوالدين',
-      );
-
-      if (enteredPin != null) {
-        final isCorrect = await PinStorage.getPin() == enteredPin;
-        
-        if (isCorrect && context.mounted) {
-          // Correct PIN, navigate to parent control
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ParentControlScreen(),
-            ),
-          );
-        } else if (context.mounted) {
-          // Wrong PIN, show error
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('الرمز السري غير صحيح', textAlign: TextAlign.center),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } else {
-      // No PIN set, navigate directly
+    if (!hasPin) {
+      // If no PIN is set, allow direct access to set a new PIN
       if (context.mounted) {
         Navigator.push(
           context,
@@ -237,6 +208,48 @@ class MainScreen extends StatelessWidget {
             builder: (context) => const ParentControlScreen(),
           ),
         );
+      }
+      return;
+    }
+    
+    // Show PIN input dialog
+    final enteredPin = await showPinInputDialog(
+      context: context,
+      title: 'أدخل الرمز السري',
+      description: 'الرجاء إدخال الرمز السري للوصول إلى إعدادات الوالدين',
+      showForgotPin: true,
+      onForgotPin: () {
+        // Handle forgot PIN flow if needed
+        Navigator.pop(context); // Close the PIN dialog
+        // You could implement a recovery mechanism here
+      },
+    );
+    
+    if (enteredPin != null && context.mounted) {
+      // Verify the entered PIN
+      final storedPin = await PinStorage.getPin();
+      if (enteredPin == storedPin) {
+        // Correct PIN, navigate to parent control screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ParentControlScreen(),
+          ),
+        );
+      } else {
+        // Incorrect PIN
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'الرمز السري غير صحيح',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.notoKufiArabic(),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
