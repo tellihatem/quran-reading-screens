@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:quran/quran.dart' as quran;
+import '../providers/theme_provider.dart';
 import 'surah_reading_screen.dart';
 import 'dart:ui' as ui;
 import 'widgets/background_widget.dart';
 
 class SurahSelectionScreen extends StatefulWidget {
-  final Function() toggleDarkMode;
-  final bool isDarkMode;
-
-  const SurahSelectionScreen({
-    Key? key,
-    required this.toggleDarkMode,
-    required this.isDarkMode,
-  }) : super(key: key);
+  const SurahSelectionScreen({Key? key}) : super(key: key);
 
   @override
   State<SurahSelectionScreen> createState() => _SurahSelectionScreenState();
@@ -45,18 +40,20 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
       appBar: AppBar(
         title: Text(
           'اختر السورة',
-          style: GoogleFonts.amiri(fontSize: 24, color: Colors.white),
+          style: GoogleFonts.notoKufiArabic(),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFF2196F3),
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: Icon(
-            isDark ? Icons.light_mode : Icons.dark_mode,
-            color: Colors.white,
+        leading: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, _) => IconButton(
+            icon: Icon(
+              themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              color: Colors.white,
+            ),
+            onPressed: themeProvider.toggleTheme,
+            tooltip: themeProvider.isDarkMode ? 'الوضع الفاتح' : 'الوضع المظلم',
           ),
-          onPressed: widget.toggleDarkMode,
-          tooltip: isDark ? 'الوضع الفاتح' : 'الوضع المظلم',
         ),
         actions: [
           IconButton(
@@ -137,12 +134,9 @@ class _SurahSelectionScreenState extends State<SurahSelectionScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder:
-                                      (_) => SurahReadingScreen(
-                                        surahNumber: surahNumber,
-                                        toggleDarkMode: widget.toggleDarkMode,
-                                        isDarkMode: widget.isDarkMode,
-                                      ),
+                                  builder: (context) => SurahReadingScreen(
+                                    surahNumber: surahNumber,
+                                  ),
                                 ),
                               );
                             },

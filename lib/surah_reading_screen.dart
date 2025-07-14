@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quran/quran.dart' as quran;
@@ -16,15 +18,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SurahReadingScreen extends StatefulWidget {
   final int surahNumber;
-  final Function() toggleDarkMode;
-  final bool isDarkMode;
 
-  const SurahReadingScreen({
-    Key? key,
-    required this.surahNumber,
-    required this.toggleDarkMode,
-    required this.isDarkMode,
-  }) : super(key: key);
+  const SurahReadingScreen({Key? key, required this.surahNumber})
+    : super(key: key);
 
   @override
   _SurahReadingScreenState createState() => _SurahReadingScreenState();
@@ -679,13 +675,14 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   Widget _buildSettingsMenu() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     return SettingsMenu(
       initialTextSize: textSize,
       initialLineHeight: lineHeight,
       onTextSizeChanged: _updateTextSize,
       onLineHeightChanged: _updateLineHeight,
-      onDarkModeToggle: widget.toggleDarkMode,
-      isDarkMode: widget.isDarkMode,
+      onDarkModeToggle: themeProvider.toggleTheme,
+      isDarkMode: themeProvider.isDarkMode,
     );
   }
 

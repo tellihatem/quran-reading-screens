@@ -14,6 +14,9 @@ class GamesSelectScreen extends StatelessWidget {
           'الألعاب',
           style: GoogleFonts.amiri(fontSize: 24, color: Colors.white),
         ),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF2196F3) 
+            : Theme.of(context).appBarTheme.backgroundColor,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -77,41 +80,62 @@ class GamesSelectScreen extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor =
-        isDark ? const Color(0xCC1E1E1E) : const Color(0xCCFFFFFF);
-    final textColor = isDark ? Colors.white : Colors.black87;
-
-    return GestureDetector(
-      onTap: onTap,
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.only(bottom: 16),
       child: Container(
-        width: 300,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 25),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.2),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
               blurRadius: 10,
-              offset: const Offset(0, 5),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          textDirection: ui.TextDirection.rtl,
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.amiri(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: textColor,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: GoogleFonts.notoKufiArabic(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Icon(icon, size: 32, color: Theme.of(context).primaryColor),
-          ],
+          ),
         ),
       ),
     );

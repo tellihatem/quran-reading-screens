@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'dart:ui' as ui;
 import 'package:haffiz/main_screen.dart';
 import 'package:haffiz/services/shared_prefs_service.dart';
+import 'package:haffiz/providers/theme_provider.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized
@@ -11,7 +13,14 @@ void main() async {
   // Initialize SharedPreferences service
   sharedPrefsService.init();
   
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -22,19 +31,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isDarkMode = false;
-
-  void toggleDarkMode() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return MaterialApp(
       title: 'حافظ',
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         brightness: Brightness.light,
         fontFamily: 'Amiri',
@@ -63,11 +66,11 @@ class _MyAppState extends State<MyApp> {
           displayLarge: TextStyle(fontFamily: 'Amiri'),
           bodyLarge: TextStyle(fontFamily: 'Amiri'),
           bodyMedium: TextStyle(fontFamily: 'Amiri'),
-        ).apply(bodyColor: Colors.grey[100], displayColor: Colors.grey[100]),
+        ).apply(bodyColor: Colors.white, displayColor: Colors.white),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green[800]!,
-          primary: Colors.green[800],
-          secondary: Colors.green[700],
+          seedColor: Colors.green[700]!,
+          primary: Colors.green[700],
+          secondary: Colors.green[600],
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
@@ -98,7 +101,7 @@ class _MyAppState extends State<MyApp> {
         );
       },
       debugShowCheckedModeBanner: false,
-      home: MainScreen(toggleDarkMode: toggleDarkMode, isDarkMode: _isDarkMode),
+      home: const MainScreen(),
     );
   }
 }

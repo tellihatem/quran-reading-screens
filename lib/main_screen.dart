@@ -5,115 +5,93 @@ import 'surah_selection_screen.dart';
 import 'games_select_screen.dart';
 import 'parent_control_screen.dart';
 import 'widgets/pin_input_dialog.dart';
-import 'services/shared_prefs_service.dart';
+import 'widgets/background_widget.dart';
 
 class MainScreen extends StatelessWidget {
-  final Function() toggleDarkMode;
-  final bool isDarkMode;
-  
-  const MainScreen({
-    Key? key,
-    required this.toggleDarkMode,
-    required this.isDarkMode,
-  }) : super(key: key);
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background image
-          const Positioned.fill(
-            child: Image(
-              image: AssetImage('assets/background/background.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
+      body: BackgroundWidget(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Title with shadow
+                    Text(
+                      'الحافظ الصغير',
+                      style: GoogleFonts.notoKufiArabic(
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 10,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
 
-          // Main content
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Title with shadow
-                      Text(
-                        'الحافظ الصغير',
-                        style: GoogleFonts.notoKufiArabic(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: const [
-                            Shadow(
-                              color: Colors.black54,
-                              blurRadius: 10,
-                              offset: Offset(2, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-
-                      // Animated buttons
-                      _buildAnimatedButton(
-                        delay: 0,
-                        icon: Icons.menu_book,
-                        text: 'احفظ السورة',
-                        color: const Color(0xFF4CAF50),
-                        onPressed: () {},
-                      ),
-                      const SizedBox(height: 20),
-                      _buildAnimatedButton(
-                        delay: 1000,
-                        icon: Icons.headphones,
-                        text: 'استمع وردد',
-                        color: const Color(0xFF2196F3),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => SurahSelectionScreen(
-                                    toggleDarkMode: toggleDarkMode,
-                                    isDarkMode: isDarkMode,
-                                  ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      _buildAnimatedButton(
-                        delay: 1400,
-                        icon: Icons.games,
-                        text: 'العاب',
-                        color: const Color(0xFFFF9800),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const GamesSelectScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      _buildAnimatedButton(
-                        delay: 1800,
-                        icon: Icons.lock,
-                        text: 'وضع الوالدين',
-                        color: const Color(0xFF607D8B),
-                        onPressed: () => _handleParentControlAccess(context),
-                      ),
-                    ],
-                  ),
+                    // Animated buttons
+                    _buildAnimatedButton(
+                      delay: 0,
+                      icon: Icons.menu_book,
+                      text: 'احفظ السورة',
+                      color: const Color(0xFF4CAF50),
+                      onPressed: () {},
+                    ),
+                    const SizedBox(height: 20),
+                    _buildAnimatedButton(
+                      delay: 1000,
+                      icon: Icons.headphones,
+                      text: 'استمع وردد',
+                      color: const Color(0xFF2196F3),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SurahSelectionScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _buildAnimatedButton(
+                      delay: 1400,
+                      icon: Icons.games,
+                      text: 'العاب',
+                      color: const Color(0xFFFF9800),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const GamesSelectScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _buildAnimatedButton(
+                      delay: 1800,
+                      icon: Icons.lock,
+                      text: 'وضع الوالدين',
+                      color: const Color(0xFF607D8B),
+                      onPressed: () => _handleParentControlAccess(context),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

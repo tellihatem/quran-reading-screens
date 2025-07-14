@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'widgets/background_widget.dart';
-import 'widgets/pin_input_dialog.dart';
-import 'widgets/pin_input_dialog.dart' show PinStorage;
+import 'widgets/pin_input_dialog.dart' show PinStorage, showPinInputDialog;
+import 'widgets/display_settings_dialog.dart';
 
 const double _kVerticalPadding = 20.0;
 const double _kMaxContentWidth = 500.0;
@@ -218,7 +218,9 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
                               title: 'اعدادات الشاشة',
                               icon: Icons.settings_display_outlined,
                               onTap: () {
-                                // TODO: Implement screen settings
+                                DisplaySettingsDialog.show(
+                                  context: context,
+                                );
                               },
                             ),
                             _buildMenuButton(
