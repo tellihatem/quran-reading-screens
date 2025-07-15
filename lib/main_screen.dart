@@ -6,6 +6,7 @@ import 'games_select_screen.dart';
 import 'parent_control_screen.dart';
 import 'widgets/pin_input_dialog.dart';
 import 'widgets/background_widget.dart';
+import 'hifz_screen.dart';
 
 class MainScreen extends StatelessWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -46,7 +47,14 @@ class MainScreen extends StatelessWidget {
                       icon: Icons.menu_book,
                       text: 'احفظ السورة',
                       color: const Color(0xFF4CAF50),
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HifzScreen(),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                     _buildAnimatedButton(
@@ -176,20 +184,18 @@ class MainScreen extends StatelessWidget {
   // Handle parent control access with PIN check
   Future<void> _handleParentControlAccess(BuildContext context) async {
     final hasPin = await PinStorage.hasPin();
-    
+
     if (!hasPin) {
       // If no PIN is set, allow direct access to set a new PIN
       if (context.mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ParentControlScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ParentControlScreen()),
         );
       }
       return;
     }
-    
+
     // Show PIN input dialog
     final enteredPin = await showPinInputDialog(
       context: context,
@@ -202,7 +208,7 @@ class MainScreen extends StatelessWidget {
         // You could implement a recovery mechanism here
       },
     );
-    
+
     if (enteredPin != null && context.mounted) {
       // Verify the entered PIN
       final storedPin = await PinStorage.getPin();
@@ -210,9 +216,7 @@ class MainScreen extends StatelessWidget {
         // Correct PIN, navigate to parent control screen
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ParentControlScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ParentControlScreen()),
         );
       } else {
         // Incorrect PIN
