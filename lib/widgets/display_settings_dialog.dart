@@ -93,6 +93,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             'إعدادات الشاشة',
             style: GoogleFonts.notoKufiArabic(
               fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.titleLarge?.color,
             ),
             textAlign: TextAlign.center,
           ),
@@ -123,13 +124,14 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
                 style: GoogleFonts.notoKufiArabic(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: Theme.of(context).dividerColor),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButton<String>(
@@ -137,19 +139,23 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
                 value: _readingStyle,
                 underline: const SizedBox(),
                 icon: const Icon(Icons.arrow_drop_down),
-                items: const [
+                items: [
                   DropdownMenuItem<String>(
                     value: 'حفص',
                     child: Text(
                       'حفص',
-                      style: TextStyle(color: Colors.black87),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                      ),
                     ),
                   ),
                   DropdownMenuItem<String>(
                     value: 'ورش',
                     child: Text(
                       'ورش',
-                      style: TextStyle(color: Colors.black87),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
+                      ),
                     ),
                   ),
                 ],
@@ -180,7 +186,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: Theme.of(context).dividerColor),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: DropdownButton<String>(
@@ -196,8 +202,8 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
                       reciter['name'],
                       style: GoogleFonts.notoKufiArabic(
                         color: reciter['enabled'] == true 
-                            ? Theme.of(context).textTheme.bodyLarge?.color
-                            : Colors.grey,
+                            ? Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87
+                            : Theme.of(context).disabledColor,
                       ),
                     ),
                   );

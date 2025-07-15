@@ -131,11 +131,11 @@ class _PinInputDialogState extends State<PinInputDialog> {
                   vertical: _getVerticalPadding(context),
                 ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Theme.of(context).shadowColor.withOpacity(0.1),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -152,7 +152,7 @@ class _PinInputDialogState extends State<PinInputDialog> {
                       style: GoogleFonts.notoKufiArabic(
                         fontSize: isLandscape ? 18 : 22,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF4B6A70),
+                        color: const Color(0xFF2196F3),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -167,7 +167,7 @@ class _PinInputDialogState extends State<PinInputDialog> {
                       widget.description,
                       style: GoogleFonts.notoKufiArabic(
                         fontSize: isLandscape ? 14 : 16,
-                        color: const Color(0xFF6D8C91),
+                        color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,
@@ -191,12 +191,14 @@ class _PinInputDialogState extends State<PinInputDialog> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: index < _enteredPin.length
-                                ? const Color(0xFF4EC8B4)
-                                : const Color(0xFFE0E0E0),
+                                ? const Color(0xFF2196F3)
+                                : Theme.of(context).brightness == Brightness.dark 
+                                    ? Colors.white10
+                                    : Theme.of(context).dividerColor,
                             boxShadow: [
                               if (index == _enteredPin.length)
                                 BoxShadow(
-                                  color: const Color(0xFF4EC8B4).withOpacity(0.5),
+                                  color: const Color(0xFF2196F3).withOpacity(0.5),
                                   blurRadius: 8,
                                   spreadRadius: 2,
                                 ),
@@ -258,7 +260,7 @@ class _PinInputDialogState extends State<PinInputDialog> {
                         'نسيت الرمز السري؟',
                         style: GoogleFonts.notoKufiArabic(
                           fontSize: 14,
-                          color: const Color(0xFF4EC8B4),
+                          color: const Color(0xFF2196F3),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -335,7 +337,7 @@ class _PinInputDialogState extends State<PinInputDialog> {
                 child: icon != null
                     ? Icon(
                         icon,
-                        color: const Color(0xFF4B6A70),
+                        color: const Color(0xFF2196F3),
                         size: iconSize,
                       )
                     : Text(
@@ -343,7 +345,7 @@ class _PinInputDialogState extends State<PinInputDialog> {
                         style: GoogleFonts.notoKufiArabic(
                           fontSize: fontSize,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF4B6A70),
+                          color: const Color(0xFF2196F3),
                           height: 1.2,
                         ),
                       ),
