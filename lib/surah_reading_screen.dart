@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:flutter/gestures.dart';
@@ -188,6 +190,19 @@ class WavyPainter extends CustomPainter {
 }
 
 class _SurahReadingScreenState extends State<SurahReadingScreen> {
+  String _readingStyle = 'حفص'; // Default to Hafs
+  String _warshFontFamily = 'Warsh';
+
+  Future<void> _loadReadingStyle() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedStyle = prefs.getString('readingStyle') ?? 'حفص';
+    if (savedStyle != _readingStyle) {
+      setState(() {
+        _readingStyle = savedStyle;
+      });
+    }
+  }
+
   Map<String, List<dynamic>> _allSurahTimings = {};
   bool _isVersePlaying = false;
   List<Widget> pages = [];
@@ -254,9 +269,10 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     _loadTimings();
     _showPlaybackBar = false; // Initialize playback bar visibility
 
-    // Schedule page building after the first frame is rendered
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Load reading style after initialization
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
+        await _loadReadingStyle();
         _buildPages();
         setState(() {});
       }
@@ -907,13 +923,17 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     List<Widget> builtPages = [];
     _pageVerseRanges = []; // Reset verse ranges
 
-    final TextStyle textStyle = GoogleFonts.amiri(
+    final TextStyle textStyle = TextStyle(
       fontSize: textSize,
       height: lineHeight,
       color:
           Theme.of(context).brightness == Brightness.dark
               ? Colors.grey[100]
               : Colors.grey[900],
+      fontFamily:
+          _readingStyle == 'حفص'
+              ? GoogleFonts.amiri().fontFamily
+              : _warshFontFamily,
     );
 
     final surahPages = quran.getSurahPages(widget.surahNumber);
@@ -939,15 +959,25 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         lastVerse = end;
 
         for (int i = start; i <= end; i++) {
-          String verse =
-              quran
-                  .getVerse(widget.surahNumber, i, verseEndSymbol: true)
-                  .replaceAll(
-                    RegExp(r'\s+'),
-                    ' ',
-                  ) // Normalize internal whitespace
-                  .replaceAll('\u200f', '') // Remove RTL marks
-                  .trim();
+          String verse;
+          if (_readingStyle == 'ورش') {
+            verse =
+                quran
+                    .getVerse(widget.surahNumber, i, verseEndSymbol: true)
+                    .replaceAll('\u06dd', '')
+                    .replaceAll('\u200f', '') // Remove RTL marks
+                    .trim();
+          } else {
+            verse =
+                quran
+                    .getVerse(widget.surahNumber, i, verseEndSymbol: true)
+                    .replaceAll(
+                      RegExp(r'\s+'),
+                      ' ',
+                    ) // Normalize internal whitespace
+                    .replaceAll('\u200f', '') // Remove RTL marks
+                    .trim();
+          }
 
           // For the first verse of surahs other than 1 and 9, we'll show the Bismillah at the top of the page
           // and remove it from the verse text if it exists
@@ -1051,12 +1081,16 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
               child: SingleChildScrollView(
                 child: RichText(
                   text: TextSpan(
-                    style: GoogleFonts.amiri(
+                    style: TextStyle(
                       fontSize: textSize,
                       height:
                           lineHeight *
                           1.5, // Reduced line height for better fit
                       color: isDarkMode ? Colors.grey[100] : Colors.grey[900],
+                      fontFamily:
+                          _readingStyle == 'حفص'
+                              ? GoogleFonts.amiri().fontFamily
+                              : _warshFontFamily,
                     ),
                     children:
                         spans
