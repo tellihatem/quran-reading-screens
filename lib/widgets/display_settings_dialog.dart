@@ -31,9 +31,11 @@ class DisplaySettingsDialog extends StatefulWidget {
 class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
   static const String _animationsKey = 'animationsEnabled';
   static const String _reciterKey = 'selectedReciter';
+  static const String _readingStyleKey = 'readingStyle';
 
   late bool _animationsEnabled;
   late String _selectedReciter;
+  late String _readingStyle;
 
   final List<Map<String, dynamic>> _availableReciters = [
     {'name': 'محمود خليل الحصري', 'enabled': true},
@@ -54,6 +56,7 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
     setState(() {
       _animationsEnabled = prefs.getBool(_animationsKey) ?? false; // Default to false
       _selectedReciter = prefs.getString(_reciterKey) ?? 'محمود خليل الحصري';
+      _readingStyle = prefs.getString(_readingStyleKey) ?? 'حفص'; // Default to Hafs
     });
   }
 
@@ -64,6 +67,13 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
     } else if (value is String) {
       await prefs.setString(key, value);
     }
+  }
+
+  @override
+  void dispose() {
+    // Save the reading style when dialog is closed
+    _saveSetting(_readingStyleKey, _readingStyle);
+    super.dispose();
   }
 
   Future<void> _updateTheme(bool isDark) async {
@@ -104,6 +114,57 @@ class _DisplaySettingsDialogState extends State<DisplaySettingsDialog> {
             ),
 
             const Divider(),
+
+            // Reading Style Selection
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                'قراءة',
+                style: GoogleFonts.notoKufiArabic(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: _readingStyle,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.arrow_drop_down),
+                items: const [
+                  DropdownMenuItem<String>(
+                    value: 'حفص',
+                    child: Text(
+                      'حفص',
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                  ),
+                  DropdownMenuItem<String>(
+                    value: 'ورش',
+                    child: Text(
+                      'ورش',
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                  ),
+                ],
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _readingStyle = newValue;
+                    });
+                    _saveSetting(_readingStyleKey, newValue);
+                  }
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             // Reciter Selection
             Padding(
