@@ -37,13 +37,16 @@ class SurahCard extends StatelessWidget {
         // Use the minimum of width and height to maintain aspect ratio
         final cardWidth = constraints.maxWidth;
         final cardHeight = constraints.maxHeight;
-        
+
         return Stack(
           clipBehavior: Clip.none, // Allow children to overflow
           children: [
             // Background image with offset for unlocked cards
             Positioned(
-              top: isUnlocked ? cardHeight * 0.08 : 0.0, // 8% of card height if unlocked
+              top:
+                  isUnlocked
+                      ? cardHeight * 0.08
+                      : 0.0, // 8% of card height if unlocked
               child: Image.asset(
                 imagePath,
                 width: cardWidth,
@@ -62,7 +65,10 @@ class SurahCard extends StatelessWidget {
                   surahName,
                   style: TextStyle(
                     fontSize: cardHeight * 0.15, // 15% of card height
-                    color: isUnlocked ? Colors.white : Colors.white.withOpacity(0.7),
+                    color:
+                        isUnlocked
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.7),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -71,6 +77,26 @@ class SurahCard extends StatelessWidget {
 
             // Stars (only for unlocked cards)
             if (isUnlocked) ..._buildStars(cardWidth, cardHeight),
+
+            // Surah number at the bottom
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: cardHeight * 0.01,
+              child: Center(
+                child: Text(
+                  surahNumber.toString().padLeft(3, '0'),
+                  style: TextStyle(
+                    fontSize: cardHeight * 0.1, // 10% of card height
+                    color:
+                        isUnlocked
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.7),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -84,10 +110,10 @@ class SurahCard extends StatelessWidget {
     final centerStarWidth = cardWidth * (_centerStarWidth / 170.0);
     final centerStarHeight = cardHeight * (_centerStarHeight / 200.0);
     final starSpacing = cardWidth * (_starSpacing / 170.0);
-    
+
     // Calculate total width of all stars and spacing
     final totalWidth = starWidth * 2 + centerStarWidth + starSpacing * 2;
-    
+
     // Calculate starting position to center the stars
     final startX = (cardWidth - totalWidth) / 2;
     final starTop = cardHeight * (_starTop / 200.0);
