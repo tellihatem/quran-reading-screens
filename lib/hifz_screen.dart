@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:haffiz/widgets/surah_card.dart';
+import 'package:quran/quran.dart';
 import 'widgets/background_widget.dart';
 
 class HifzScreen extends StatelessWidget {
@@ -68,10 +70,48 @@ class HifzScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              const Expanded(
-                child: Center(
-                  child: Text(' coming soon', style: TextStyle(fontSize: 24)),
-                ),
+              Expanded(
+                child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate the number of columns based on screen width
+                  final double screenWidth = constraints.maxWidth;
+                  int crossAxisCount = 2; // Default for small screens
+                  
+                  if (screenWidth > 600) {
+                    crossAxisCount = 3; // For medium screens
+                  }
+                  if (screenWidth > 900) {
+                    crossAxisCount = 4; // For large screens
+                  }
+                  if (screenWidth > 1200) {
+                    crossAxisCount = 5; // For extra large screens
+                  }
+                  
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                  itemCount: 114, // Total number of surahs in the Quran
+                  itemBuilder: (context, index) {
+                    // Generate surah numbers in order: 1, 114, 113, ..., 2
+                    final surahNumber = index == 0 ? 1 : 115 - index;
+                    final surahName = getSurahNameArabic(surahNumber);
+
+                    // Only Surah 1 (Al-Fatiha) is unlocked by default
+                    final isUnlocked = surahNumber == 1;
+                    return SurahCard(
+                      surahNumber: surahNumber,
+                      surahName: surahName,
+                      isUnlocked: isUnlocked,
+                    );
+                  },
+                  );
+                },
+              ),
               ),
             ],
           ),
@@ -90,7 +130,10 @@ class HifzScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF7C4F19), // rich brown
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFFD700), width: 3), // yellow border
+        border: Border.all(
+          color: const Color(0xFFFFD700),
+          width: 3,
+        ), // yellow border
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.18),
