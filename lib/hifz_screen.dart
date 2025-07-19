@@ -10,126 +10,137 @@ class HifzScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 0, // This will completely remove the app bar
+      ),
       body: BackgroundWidget(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App Bar with Counters
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2196F3).withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: const Color(0x22FFFFFF),
-                          width: 1,
+        child: Column(
+          children: [
+            // App Bar with Counters
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3).withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Star Counter
-                          Row(
-                            children: [
-                              _buildCounter(
-                                count: 5,
-                                color: const Color(0xFFFFD700),
-                                width: 60,
-                              ),
-                              const Icon(
-                                Icons.star,
-                                color: Color(0xFFFFD700),
-                                size: 36,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 20),
-                          // Trophy Counter
-                          Row(
-                            children: [
-                              _buildCounter(
-                                count: 2,
-                                color: const Color(0xFFDAA520),
-                                width: 60,
-                              ),
-                              const Icon(
-                                Icons.emoji_events,
-                                color: Color(0xFFDAA520),
-                                size: 36,
-                              ),
-                            ],
-                          ),
-                        ],
+                      ],
+                      border: Border.all(
+                        color: const Color(0x22FFFFFF),
+                        width: 1,
                       ),
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward_ios),
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF2196F3)
-                          : Colors.white,
-                      onPressed: () => Navigator.pop(context),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Star Counter
+                        Row(
+                          children: [
+                            _buildCounter(
+                              count: 5,
+                              color: const Color(0xFFFFD700),
+                              width: 60,
+                            ),
+                            const Icon(
+                              Icons.star,
+                              color: Color(0xFFFFD700),
+                              size: 36,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 20),
+                        // Trophy Counter
+                        Row(
+                          children: [
+                            _buildCounter(
+                              count: 2,
+                              color: const Color(0xFFDAA520),
+                              width: 60,
+                            ),
+                            const Icon(
+                              Icons.emoji_events,
+                              color: Color(0xFFDAA520),
+                              size: 36,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios),
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF2196F3)
+                            : Colors.white,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Calculate the number of columns based on screen width
-                    final double screenWidth = constraints.maxWidth;
-                    int crossAxisCount = 2; // Default for small screens
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate the number of columns based on screen width
+                  final double screenWidth = constraints.maxWidth;
+                  int crossAxisCount = 2; // Default for small screens
 
-                    if (screenWidth > 600) {
-                      crossAxisCount = 3; // For medium screens
-                    }
-                    if (screenWidth > 900) {
-                      crossAxisCount = 4; // For large screens
-                    }
-                    if (screenWidth > 1200) {
-                      crossAxisCount = 5; // For extra large screens
-                    }
+                  if (screenWidth > 600) {
+                    crossAxisCount = 3; // For medium screens
+                  }
+                  if (screenWidth > 900) {
+                    crossAxisCount = 4; // For large screens
+                  }
+                  if (screenWidth > 1200) {
+                    crossAxisCount = 5; // For extra large screens
+                  }
 
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        childAspectRatio: 0.85,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: 114, // Total number of surahs in the Quran
-                      itemBuilder: (context, index) {
-                        // Generate surah numbers in order: 1, 114, 113, ..., 2
-                        final surahNumber = index == 0 ? 1 : 115 - index;
-                        final surahName = getSurahNameArabic(surahNumber);
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: 114, // Total number of surahs in the Quran
+                    itemBuilder: (context, index) {
+                      // Generate surah numbers in order: 1, 114, 113, ..., 2
+                      final surahNumber = index == 0 ? 1 : 115 - index;
+                      final surahName = getSurahNameArabic(surahNumber);
 
-                        // Only Surah 1 (Al-Fatiha) is unlocked by default
-                        final isUnlocked = surahNumber == 1;
-                        return SurahCard(
-                          surahNumber: surahNumber,
-                          surahName: surahName,
-                          isUnlocked: isUnlocked,
-                        );
-                      },
-                    );
-                  },
-                ),
+                      // Only Surah 1 (Al-Fatiha) is unlocked by default
+                      final isUnlocked = surahNumber == 1;
+                      return SurahCard(
+                        surahNumber: surahNumber,
+                        surahName: surahName,
+                        isUnlocked: isUnlocked,
+                      );
+                    },
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
