@@ -17,12 +17,19 @@ import 'package:just_audio/just_audio.dart';
 import 'package:haffiz/widgets/settings_menu.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:haffiz/widgets/memorization_confirmation_dialog.dart';
 
 class SurahReadingScreen extends StatefulWidget {
   final int surahNumber;
+  final bool isFromHifzScreen;
+  final VoidCallback? onSurahMemorized;
 
-  const SurahReadingScreen({Key? key, required this.surahNumber})
-    : super(key: key);
+  const SurahReadingScreen({
+    Key? key, 
+    required this.surahNumber,
+    this.isFromHifzScreen = false,
+    this.onSurahMemorized,
+  }) : super(key: key);
 
   @override
   _SurahReadingScreenState createState() => _SurahReadingScreenState();
@@ -1372,10 +1379,53 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           ),
           centerTitle: true,
           actions: [
+            if (widget.isFromHifzScreen)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final surahName = quran.getSurahNameArabic(widget.surahNumber);
+                    
+                    await MemorizationConfirmationDialog.show(
+                      context,
+                      surahNumber: widget.surahNumber,
+                      surahName: surahName,
+                      onConfirm: () {
+                        _markSurahAsMemorized();
+                        // TODO: Navigate to memorization games screen
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('سيتم اختبار حفظك لسورة $surahName قريباً!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  icon: Icon(Icons.check, color: Colors.white, size: 20),
+                  label: Text(
+                    'تم الحفظ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.arrow_forward, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
             ),
+            const SizedBox(width: 4),
           ],
         ),
         body: Stack(
@@ -1434,5 +1484,23 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         ),
       ),
     );
+  }
+
+  void _markSurahAsMemorized() async {
+    // Save to SharedPreferences that this surah is memorized
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('surah_${widget.surahNumber}_memorized', true);
+    
+    // Notify parent widget if provided
+    if (widget.onSurahMemorized != null) {
+      widget.onSurahMemorized!();
+    }
+    
+    // Update UI if needed
+    if (mounted) {
+      setState(() {
+        // Update any state if necessary
+      });
+    }
   }
 }

@@ -2,10 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:haffiz/widgets/surah_card.dart';
 import 'package:quran/quran.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/background_widget.dart';
 
-class HifzScreen extends StatelessWidget {
+class HifzScreen extends StatefulWidget {
   const HifzScreen({Key? key}) : super(key: key);
+
+  @override
+  _HifzScreenState createState() => _HifzScreenState();
+}
+
+class _HifzScreenState extends State<HifzScreen> {
+  final Set<int> _memorizedSurahs = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMemorizedSurahs();
+  }
+
+  Future<void> _loadMemorizedSurahs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isLoading = true;
+    });
+
+    final memorized = <int>{};
+    for (int i = 1; i <= 114; i++) {
+      if (prefs.getBool('surah_${i}_memorized') == true) {
+        memorized.add(i);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _memorizedSurahs.clear();
+        _memorizedSurahs.addAll(memorized);
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,11 +167,17 @@ class HifzScreen extends StatelessWidget {
 
                       // Only Surah 1 (Al-Fatiha) is unlocked by default
                       final isUnlocked = surahNumber == 1;
-                      return SurahCard(
-                        surahNumber: surahNumber,
-                        surahName: surahName,
-                        isUnlocked: isUnlocked,
-                      );
+                      return _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : SurahCard(
+                              key: ValueKey('surah_$surahNumber'),
+                              surahNumber: surahNumber,
+                              surahName: surahName,
+                              isUnlocked: isUnlocked,
+                              isFromHifzScreen: true,
+                              isMemorized: _memorizedSurahs.contains(surahNumber),
+                              onMemorized: _loadMemorizedSurahs,
+                            );
                     },
                   );
                 },

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:haffiz/surah_reading_screen.dart';
 
 class SurahCard extends StatelessWidget {
   final int surahNumber;
   final String surahName;
   final bool isUnlocked;
+  final bool isFromHifzScreen;
+  final bool isMemorized;
+  final VoidCallback? onMemorized;
 
   // Fixed dimensions to match the image sizes
   static const double cardWidth = 170.0;
@@ -25,6 +29,9 @@ class SurahCard extends StatelessWidget {
     required this.surahNumber,
     required this.surahName,
     required this.isUnlocked,
+    this.isFromHifzScreen = false,
+    this.isMemorized = false,
+    this.onMemorized,
   }) : super(key: key);
 
   @override
@@ -32,8 +39,26 @@ class SurahCard extends StatelessWidget {
     final String imagePath =
         isUnlocked ? 'assets/cards/unlocked.png' : 'assets/cards/locked.png';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
+    return GestureDetector(
+      onTap: isUnlocked ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SurahReadingScreen(
+              surahNumber: surahNumber,
+              isFromHifzScreen: isFromHifzScreen,
+              onSurahMemorized: isFromHifzScreen ? () {
+                // Notify parent widget that the surah was marked as memorized
+                if (onMemorized != null) {
+                  onMemorized!();
+                }
+              } : null,
+            ),
+          ),
+        );
+      } : null,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
         // Use the minimum of width and height to maintain aspect ratio
         final cardWidth = constraints.maxWidth;
         final cardHeight = constraints.maxHeight;
@@ -99,7 +124,8 @@ class SurahCard extends StatelessWidget {
             ),
           ],
         );
-      },
+        },
+      ),
     );
   }
 
@@ -120,12 +146,14 @@ class SurahCard extends StatelessWidget {
     final starSideTop = cardHeight * (_starSideTop / 200.0);
 
     return [
-      // Left star
+      // Left star - use success star if memorized
       Positioned(
         left: startX,
         top: starSideTop,
         child: Image.asset(
-          'assets/cards/star_side.png',
+          isMemorized 
+              ? 'assets/cards/star_side_success.png' 
+              : 'assets/cards/star_side.png',
           width: starWidth,
           height: starHeight,
         ),
