@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui' as ui;
 import 'widgets/background_widget.dart';
+import 'games/ayah_ordering_screen.dart';
+import 'games/surah_selection_for_game_screen.dart';
 
-class GamesSelectScreen extends StatelessWidget {
+class GamesSelectScreen extends StatefulWidget {
   const GamesSelectScreen({super.key});
 
+  @override
+  State<GamesSelectScreen> createState() => _GamesSelectScreenState();
+}
+
+class _GamesSelectScreenState extends State<GamesSelectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,11 +43,19 @@ class GamesSelectScreen extends StatelessWidget {
                 context: context,
                 title: 'لعبة الذاكرة',
                 icon: Icons.memory,
-                onTap: () {
-                  // TODO: Navigate to Memory Game
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                onTap: () async {
+                  final surahs = await showSurahSelectionForGame(
+                    context: context,
+                    gameTitle: 'لعبة الذاكرة',
                   );
+                  if (surahs != null && surahs.isNotEmpty) {
+                    // TODO: Navigate to Memory Game with selected surahs
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                      );
+                    }
+                  }
                 },
               ),
               const SizedBox(height: 20),
@@ -48,11 +63,21 @@ class GamesSelectScreen extends StatelessWidget {
                 context: context,
                 title: 'ترتيب الآيات',
                 icon: Icons.sort_by_alpha,
-                onTap: () {
-                  // TODO: Navigate to Verse Ordering Game
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                onTap: () async {
+                  final surahs = await showSurahSelectionForGame(
+                    context: context,
+                    gameTitle: 'ترتيب الآيات',
                   );
+                  if (surahs != null && surahs.isNotEmpty) {
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AyahOrderingScreen(selectedSurahs: surahs),
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
               const SizedBox(height: 20),
@@ -60,11 +85,19 @@ class GamesSelectScreen extends StatelessWidget {
                 context: context,
                 title: 'اختر الإجابة الصحيحة',
                 icon: Icons.quiz,
-                onTap: () {
-                  // TODO: Navigate to Quiz Game
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                onTap: () async {
+                  final surahs = await showSurahSelectionForGame(
+                    context: context,
+                    gameTitle: 'اختر الإجابة الصحيحة',
                   );
+                  if (surahs != null && surahs.isNotEmpty) {
+                    // TODO: Navigate to Quiz Game with selected surahs
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                      );
+                    }
+                  }
                 },
               ),
             ],

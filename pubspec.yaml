@@ -47,6 +47,7 @@ dependencies:
   delayed_display: ^2.0.0
   shared_preferences: ^2.5.3
   provider: ^6.1.1
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:
