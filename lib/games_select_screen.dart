@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:ui' as ui;
 import 'widgets/background_widget.dart';
 import 'games/ayah_ordering_screen.dart';
 import 'games/surah_selection_for_game_screen.dart';
+import 'games/memory_game_screen.dart';
+import 'games/quiz_game_screen.dart';
 
 class GamesSelectScreen extends StatefulWidget {
   const GamesSelectScreen({super.key});
@@ -21,9 +22,10 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
           'الألعاب',
           style: GoogleFonts.amiri(fontSize: 24, color: Colors.white),
         ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? const Color(0xFF2196F3) 
-            : Theme.of(context).appBarTheme.backgroundColor,
+        backgroundColor:
+            Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2196F3)
+                : Theme.of(context).appBarTheme.backgroundColor,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -49,10 +51,12 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
                     gameTitle: 'لعبة الذاكرة',
                   );
                   if (surahs != null && surahs.isNotEmpty) {
-                    // TODO: Navigate to Memory Game with selected surahs
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MemoryGameScreen(selectedSurahs: surahs),
+                        ),
                       );
                     }
                   }
@@ -73,7 +77,9 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AyahOrderingScreen(selectedSurahs: surahs),
+                          builder:
+                              (context) =>
+                                  AyahOrderingScreen(selectedSurahs: surahs),
                         ),
                       );
                     }
@@ -91,10 +97,17 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
                     gameTitle: 'اختر الإجابة الصحيحة',
                   );
                   if (surahs != null && surahs.isNotEmpty) {
-                    // TODO: Navigate to Quiz Game with selected surahs
                     if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuizGameScreen(selectedSurahs: surahs),
+                        ),
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('سيتم إضافة اللعبة قريباً')),
+                        const SnackBar(
+                          content: Text('سيتم إضافة اللعبة قريباً'),
+                        ),
                       );
                     }
                   }
@@ -128,10 +141,7 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
               Colors.white.withOpacity(0.05),
             ],
           ),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -150,11 +160,7 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  Icon(icon, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
                   Text(
                     title,
