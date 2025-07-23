@@ -16,8 +16,8 @@ class HifzScreen extends StatefulWidget {
 class _HifzScreenState extends State<HifzScreen> {
   final Set<int> _memorizedSurahs = {};
   bool _isLoading = true;
-  int _threeStarSurahs = 0;  // Counter for surahs with 3 stars
-  int _totalStars = 0;       // Counter for total stars across all surahs
+  int _threeStarSurahs = 0; // Counter for surahs with 3 stars
+  int _totalStars = 0; // Counter for total stars across all surahs
 
   @override
   void initState() {
@@ -34,7 +34,7 @@ class _HifzScreenState extends State<HifzScreen> {
     final memorized = <int>{};
     // Get the global star count
     final totalStars = prefs.getInt('global_star_count') ?? 0;
-    
+
     // Count memorized surahs and surahs with 3 stars
     int threeStarCount = 0;
     for (int i = 1; i <= 114; i++) {
@@ -87,7 +87,7 @@ class _HifzScreenState extends State<HifzScreen> {
                     child: Stack(
                       children: [
                         SvgPicture.asset(
-                          'assets/cards/score.svg',
+                          'assets/hafiz/score.svg',
                           fit: BoxFit.contain,
                         ),
                         // Left counter (stars)
