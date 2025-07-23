@@ -25,7 +25,7 @@ class SurahReadingScreen extends StatefulWidget {
   final VoidCallback? onSurahMemorized;
 
   const SurahReadingScreen({
-    Key? key, 
+    Key? key,
     required this.surahNumber,
     this.isFromHifzScreen = false,
     this.onSurahMemorized,
@@ -1381,11 +1381,16 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           actions: [
             if (widget.isFromHifzScreen)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8.0,
+                  horizontal: 4.0,
+                ),
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    final surahName = quran.getSurahNameArabic(widget.surahNumber);
-                    
+                    final surahName = quran.getSurahNameArabic(
+                      widget.surahNumber,
+                    );
+
                     await MemorizationConfirmationDialog.show(
                       context,
                       surahNumber: widget.surahNumber,
@@ -1395,7 +1400,9 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         // TODO: Navigate to memorization games screen
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('سيتم اختبار حفظك لسورة $surahName قريباً!'),
+                            content: Text(
+                              'سيتم اختبار حفظك لسورة $surahName قريباً!',
+                            ),
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -1487,9 +1494,21 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   void _markSurahAsMemorized() async {
-    // Save to SharedPreferences that this surah is memorized
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('surah_${widget.surahNumber}_memorized', true);
+    
+    // Check if surah is already memorized
+    final isAlreadyMemorized = prefs.getBool('surah_${widget.surahNumber}_memorized') ?? false;
+    
+    if (!isAlreadyMemorized) {
+      // Mark as memorized
+      await prefs.setBool('surah_${widget.surahNumber}_memorized', true);
+      
+      // Get current global star count (default to 0 if not set)
+      final currentGlobalStars = prefs.getInt('global_star_count') ?? 0;
+      
+      // Add 1 star to the global counter
+      await prefs.setInt('global_star_count', currentGlobalStars + 1);
+    }
     
     // Notify parent widget if provided
     if (widget.onSurahMemorized != null) {

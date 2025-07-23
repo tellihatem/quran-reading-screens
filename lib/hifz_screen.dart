@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:haffiz/widgets/surah_card.dart';
+import '../widgets/surah_card.dart';
 import 'package:quran/quran.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/background_widget.dart';
@@ -15,6 +16,8 @@ class HifzScreen extends StatefulWidget {
 class _HifzScreenState extends State<HifzScreen> {
   final Set<int> _memorizedSurahs = {};
   bool _isLoading = true;
+  int _threeStarSurahs = 0;  // Counter for surahs with 3 stars
+  int _totalStars = 0;       // Counter for total stars across all surahs
 
   @override
   void initState() {
@@ -29,9 +32,21 @@ class _HifzScreenState extends State<HifzScreen> {
     });
 
     final memorized = <int>{};
+    // Get the global star count
+    final totalStars = prefs.getInt('global_star_count') ?? 0;
+    
+    // Count memorized surahs and surahs with 3 stars
+    int threeStarCount = 0;
     for (int i = 1; i <= 114; i++) {
-      if (prefs.getBool('surah_${i}_memorized') == true) {
+      final isMemorized = prefs.getBool('surah_${i}_memorized') ?? false;
+      if (isMemorized) {
         memorized.add(i);
+      }
+
+      // Count surahs with 3 stars
+      final surahStars = prefs.getInt('surah_${i}_stars') ?? 0;
+      if (surahStars >= 3) {
+        threeStarCount++;
       }
     }
 
@@ -39,6 +54,8 @@ class _HifzScreenState extends State<HifzScreen> {
       setState(() {
         _memorizedSurahs.clear();
         _memorizedSurahs.addAll(memorized);
+        _totalStars = totalStars;
+        _threeStarSurahs = threeStarCount;
         _isLoading = false;
       });
     }
@@ -64,59 +81,54 @@ class _HifzScreenState extends State<HifzScreen> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2196F3).withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: const Color(0x22FFFFFF),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  SizedBox(
+                    width: 250,
+                    height: 58,
+                    child: Stack(
                       children: [
-                        // Star Counter
-                        Row(
-                          children: [
-                            _buildCounter(
-                              count: 5,
-                              color: const Color(0xFFFFD700),
-                              width: 60,
-                            ),
-                            const Icon(
-                              Icons.star,
-                              color: Color(0xFFFFD700),
-                              size: 36,
-                            ),
-                          ],
+                        SvgPicture.asset(
+                          'assets/cards/score.svg',
+                          fit: BoxFit.contain,
                         ),
-                        const SizedBox(width: 20),
-                        // Trophy Counter
-                        Row(
-                          children: [
-                            _buildCounter(
-                              count: 2,
-                              color: const Color(0xFFDAA520),
-                              width: 60,
+                        // Left counter (stars)
+                        Positioned(
+                          left: 60,
+                          top: 16,
+                          child: Text(
+                            '${_threeStarSurahs.toString().padLeft(3, '0')}',
+                            style: GoogleFonts.roboto(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  offset: const Offset(1, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
                             ),
-                            const Icon(
-                              Icons.emoji_events,
-                              color: Color(0xFFDAA520),
-                              size: 36,
+                          ),
+                        ),
+                        // Right counter (trophies)
+                        Positioned(
+                          right: 35,
+                          top: 16,
+                          child: Text(
+                            '${_totalStars.toString().padLeft(3, '0')}',
+                            style: GoogleFonts.roboto(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  offset: const Offset(1, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -170,55 +182,20 @@ class _HifzScreenState extends State<HifzScreen> {
                       return _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : SurahCard(
-                              key: ValueKey('surah_$surahNumber'),
-                              surahNumber: surahNumber,
-                              surahName: surahName,
-                              isUnlocked: isUnlocked,
-                              isFromHifzScreen: true,
-                              isMemorized: _memorizedSurahs.contains(surahNumber),
-                              onMemorized: _loadMemorizedSurahs,
-                            );
+                            key: ValueKey('surah_$surahNumber'),
+                            surahNumber: surahNumber,
+                            surahName: surahName,
+                            isUnlocked: isUnlocked,
+                            isFromHifzScreen: true,
+                            isMemorized: _memorizedSurahs.contains(surahNumber),
+                            onMemorized: _loadMemorizedSurahs,
+                          );
                     },
                   );
                 },
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCounter({
-    required int count,
-    required Color color,
-    double? width,
-  }) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withOpacity(0.5), width: 1.5),
-      ),
-      child: Center(
-        child: Text(
-          count.toString().padLeft(3, '0'),
-          textAlign: TextAlign.center,
-          style: GoogleFonts.roboto(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: 0.5,
-            shadows: [
-              Shadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
         ),
       ),
     );

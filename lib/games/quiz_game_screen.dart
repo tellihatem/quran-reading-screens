@@ -7,6 +7,24 @@ import 'dart:ui' as ui;
 import '../widgets/background_widget.dart';
 import 'package:confetti/confetti.dart';
 
+enum QuestionType { textCompletion, nextAyah, surahName }
+
+class Question {
+  final String text;
+  final List<String> answers;
+  final int correctAnswerIndex;
+  final String explanation;
+  final QuestionType type;
+
+  Question({
+    required this.text,
+    required this.answers,
+    required this.correctAnswerIndex,
+    required this.explanation,
+    required this.type,
+  });
+}
+
 class QuizGameScreen extends StatefulWidget {
   final List<int> selectedSurahs;
 
@@ -94,17 +112,15 @@ class _QuizGameScreenState extends State<QuizGameScreen>
     final surah = widget.selectedSurahs.first;
     final verseCount = quran.getVerseCount(surah);
 
-    // For very short surahs (less than 10 verses), limit to 3 questions
-    if (verseCount <= 10) return 3;
+    // We need at least 2 verses per question (current and next verse)
+    final maxPossibleQuestions = (verseCount / 2).floor();
 
-    // For short surahs (11-20 verses), limit to 5 questions
-    if (verseCount <= 20) return 5;
+    // Limit based on verse count but don't exceed the maximum possible
+    if (verseCount <= 10) return min(3, maxPossibleQuestions);
+    if (verseCount <= 20) return min(5, maxPossibleQuestions);
+    if (verseCount <= 50) return min(7, maxPossibleQuestions);
 
-    // For medium surahs (21-50 verses), limit to 7 questions
-    if (verseCount <= 50) return 7;
-
-    // For longer surahs, use the default 10 questions
-    return 10;
+    return min(10, maxPossibleQuestions);
   }
 
   // Track used verses to prevent duplicates
@@ -140,32 +156,60 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       return;
     }
 
-    // Calculate the appropriate number of questions
-    _totalQuestions = _calculateMaxQuestions();
-
     // Check if only one surah is selected
     final bool isSingleSurah = widget.selectedSurahs.length == 1;
 
-    for (int i = 0; i < _totalQuestions && mounted; i++) {
+    // Calculate the appropriate number of questions
+    _totalQuestions = _calculateMaxQuestions();
+
+    // If we can't generate any questions, show an error
+    if (_totalQuestions == 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لا توجد آيات كافية لإنشاء الأسئلة')),
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+
+    // Track how many questions we've successfully generated
+    int questionsGenerated = 0;
+    int totalAttempts = 0;
+    const int maxTotalAttempts = 50; // Prevent infinite loops
+
+    while (questionsGenerated < _totalQuestions &&
+        totalAttempts < maxTotalAttempts &&
+        mounted) {
+      totalAttempts++;
+
       final surah = _getNextSurah();
       final verseCount = quran.getVerseCount(surah);
 
+      // Skip if surah doesn't have enough verses
+      if (verseCount < 2) continue;
+
       // Find a verse that hasn't been used yet
       int verseNumber;
-      int attempts = 0;
-      final maxAttempts = verseCount * 2; // Prevent infinite loops
+      int verseAttempts = 0;
+      final maxVerseAttempts = verseCount * 2;
+
+      // Removed unused variable
 
       do {
         // Randomly select a verse that's not the last one (so we can get the next verse)
         verseNumber = _random.nextInt(verseCount - 1) + 1;
-        attempts++;
+        verseAttempts++;
 
-        // If we've tried too many times, give up and use this verse anyway
-        if (attempts >= maxAttempts) {
+        // If we've tried too many times, give up on this surah
+        if (verseAttempts >= maxVerseAttempts) {
           break;
         }
       } while (_isVerseUsed(surah, verseNumber) ||
           _isVerseUsed(surah, verseNumber + 1));
+
+      // If we couldn't find a valid verse pair, try the next surah
+      if (verseAttempts >= maxVerseAttempts) continue;
 
       // Mark these verses as used
       _markVerseAsUsed(surah, verseNumber);
@@ -183,15 +227,26 @@ class _QuizGameScreenState extends State<QuizGameScreen>
         verseEndSymbol: false,
       );
 
-      // Create different types of questions
-      final questionType = _random.nextInt(3);
+      // Skip if we couldn't get the verses
+      if (currentVerse.isEmpty || nextVerse.isEmpty) continue;
 
+      // Create different types of questions
+      // If only one surah is selected, only generate text completion or next ayah questions
+      final questionType =
+          isSingleSurah
+              ? _random.nextInt(2) // 0 or 1 (text completion or next ayah)
+              : _random.nextInt(3); // 0, 1, or 2 (all question types)
+
+      // Generate the question based on type
       switch (questionType) {
         case 0: // Text completion
           final words = currentVerse.split(' ');
           if (words.length > 2) {
             final missingWordIndex = _random.nextInt(words.length - 1) + 1;
             final correctAnswer = words[missingWordIndex];
+
+            // Skip if the correct answer is too short or contains special characters
+            if (correctAnswer.length < 2 || correctAnswer.trim().isEmpty) break;
 
             // Generate wrong answers (similar words from other verses)
             final wrongAnswers = <String>{};
@@ -200,7 +255,11 @@ class _QuizGameScreenState extends State<QuizGameScreen>
                     ? _getNeighboringSurahs(surah)
                     : widget.selectedSurahs;
 
-            while (wrongAnswers.length < 3) {
+            int wordAttempts = 0;
+            const int maxWordAttempts = 20;
+
+            while (wrongAnswers.length < 3 && wordAttempts < maxWordAttempts) {
+              wordAttempts++;
               final randomSurah =
                   sourceSurahs[_random.nextInt(sourceSurahs.length)];
               final randomVerse =
@@ -213,14 +272,14 @@ class _QuizGameScreenState extends State<QuizGameScreen>
               final verseWords = verse.split(' ');
 
               if (verseWords.length > 2) {
-                final word = verseWords[_random.nextInt(verseWords.length)];
-                if (word != correctAnswer && word.length > 1) {
+                final word =
+                    verseWords[_random.nextInt(verseWords.length)].trim();
+                if (word.length > 1 &&
+                    word != correctAnswer &&
+                    !wrongAnswers.contains(word)) {
                   wrongAnswers.add(word);
                 }
               }
-
-              // Prevent infinite loop in case we can't find enough unique words
-              if (wrongAnswers.length >= 10) break;
             }
 
             // If we don't have enough wrong answers, add some placeholders
@@ -237,15 +296,19 @@ class _QuizGameScreenState extends State<QuizGameScreen>
               ..shuffle(_random);
             final correctIndex = answers.indexOf(correctAnswer);
 
-            questions.add(
-              Question(
-                text: 'أكمل الآية: $questionText',
-                answers: answers,
-                correctAnswerIndex: correctIndex,
-                explanation: currentVerse,
-                type: QuestionType.textCompletion,
-              ),
-            );
+            if (correctIndex >= 0) {
+              // Make sure correct answer is in the list
+              questions.add(
+                Question(
+                  text: 'أكمل الآية: $questionText',
+                  answers: answers,
+                  correctAnswerIndex: correctIndex,
+                  explanation: currentVerse,
+                  type: QuestionType.textCompletion,
+                ),
+              );
+              questionsGenerated++;
+            }
           }
           break;
 
@@ -738,22 +801,4 @@ class _QuizGameScreenState extends State<QuizGameScreen>
       ),
     );
   }
-}
-
-enum QuestionType { textCompletion, nextAyah, surahName }
-
-class Question {
-  final String text;
-  final List<String> answers;
-  final int correctAnswerIndex;
-  final String explanation;
-  final QuestionType type;
-
-  Question({
-    required this.text,
-    required this.answers,
-    required this.correctAnswerIndex,
-    required this.explanation,
-    required this.type,
-  });
 }
