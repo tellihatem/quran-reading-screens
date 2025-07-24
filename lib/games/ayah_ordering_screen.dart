@@ -7,8 +7,13 @@ import '../widgets/background_widget.dart';
 
 class AyahOrderingScreen extends StatefulWidget {
   final List<int> selectedSurahs;
+  final Function(double) onGameCompleted;
 
-  const AyahOrderingScreen({super.key, required this.selectedSurahs});
+  const AyahOrderingScreen({
+    super.key, 
+    required this.selectedSurahs,
+    required this.onGameCompleted,
+  });
 
   @override
   State<AyahOrderingScreen> createState() => _AyahOrderingScreenState();

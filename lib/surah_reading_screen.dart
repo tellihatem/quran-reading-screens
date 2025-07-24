@@ -10,6 +10,7 @@ import '../providers/theme_provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quran/quran.dart' as quran;
+import 'games/memorization_games_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -1397,13 +1398,33 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       surahName: surahName,
                       onConfirm: () {
                         _markSurahAsMemorized();
-                        // TODO: Navigate to memorization games screen
+                        
+                        // Navigate to memorization games screen without adding to back stack
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Scaffold(
+                              body: MemorizationGamesScreen(
+                                surahNumber: widget.surahNumber,
+                                surahName: surahName,
+                              ),
+                            ),
+                          ),
+                        );
+                        
+                        // Show a quick snackbar to inform the user
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'سيتم اختبار حفظك لسورة $surahName قريباً!',
+                              'حسناً! سنبدأ اختبار حفظك لسورة $surahName',
+                              textAlign: TextAlign.center,
                             ),
                             duration: Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         );
                       },

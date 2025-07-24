@@ -9,8 +9,13 @@ import '../widgets/surah_card.dart';
 
 class MemoryGameScreen extends StatefulWidget {
   final List<int> selectedSurahs;
+  final Function(double) onGameCompleted;
 
-  const MemoryGameScreen({super.key, required this.selectedSurahs});
+  const MemoryGameScreen({
+    super.key, 
+    required this.selectedSurahs,
+    required this.onGameCompleted,
+  });
 
   @override
   State<MemoryGameScreen> createState() => _MemoryGameScreenState();
@@ -211,26 +216,40 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
           ],
         ),
         actions: [
+          // Play Again / Next Surah button
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              _initializeGame();
+              Navigator.of(context).pop();
+              if (hasMoreSurahs) {
+                _initializeGame(); // Load next surah
+              } else {
+                // Calculate score (higher is better, max 100%)
+                final maxPossibleAttempts = _cards.length * 2; // Rough estimate
+                final score = (1 - (_attempts / maxPossibleAttempts)) * 100;
+                widget.onGameCompleted(score.clamp(0.0, 100.0));
+                Navigator.of(context).pop(); // Close game screen
+              }
             },
             child: Text(
-              hasMoreSurahs ? 'السورة التالية' : 'إعادة',
+              hasMoreSurahs ? 'السورة التالية' : 'إعادة اللعبة',
               style: GoogleFonts.notoKufiArabic(),
             ),
           ),
+          
+          // Restart / Exit button
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(context).pop();
               if (hasMoreSurahs) {
-                // If there are more surahs, go back to the first one
+                // Restart with first surah
                 _availableSurahs = List.from(widget.selectedSurahs)..shuffle(_random);
                 _initializeGame();
               } else {
-                // If no more surahs, go back to game selection
-                Navigator.pop(context);
+                // Calculate score and exit
+                final maxPossibleAttempts = _cards.length * 2;
+                final score = (1 - (_attempts / maxPossibleAttempts)) * 100;
+                widget.onGameCompleted(score.clamp(0.0, 100.0));
+                Navigator.of(context).pop(); // Close game screen
               }
             },
             child: Text(

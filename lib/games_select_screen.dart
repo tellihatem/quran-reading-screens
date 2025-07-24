@@ -33,7 +33,13 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MemoryGameScreen(selectedSurahs: surahs),
+                builder: (context) => MemoryGameScreen(
+                  selectedSurahs: surahs,
+                  onGameCompleted: (score) {
+                    // Handle game completion if needed
+                    Navigator.pop(context);
+                  },
+                ),
               ),
             );
           }
@@ -51,7 +57,13 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AyahOrderingScreen(selectedSurahs: surahs),
+                builder: (context) => AyahOrderingScreen(
+                  selectedSurahs: surahs,
+                  onGameCompleted: (score) {
+                    // Handle game completion if needed
+                    Navigator.pop(context);
+                  },
+                ),
               ),
             );
           }
@@ -69,7 +81,13 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => QuizGameScreen(selectedSurahs: surahs),
+                builder: (context) => QuizGameScreen(
+                  selectedSurahs: surahs,
+                  onGameCompleted: (score) {
+                    // Handle game completion if needed
+                    Navigator.pop(context);
+                  },
+                ),
               ),
             );
             ScaffoldMessenger.of(context).showSnackBar(

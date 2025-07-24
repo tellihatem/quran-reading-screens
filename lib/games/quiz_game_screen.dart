@@ -27,8 +27,13 @@ class Question {
 
 class QuizGameScreen extends StatefulWidget {
   final List<int> selectedSurahs;
+  final Function(double) onGameCompleted;
 
-  const QuizGameScreen({super.key, required this.selectedSurahs});
+  const QuizGameScreen({
+    super.key, 
+    required this.selectedSurahs,
+    required this.onGameCompleted,
+  });
 
   @override
   State<QuizGameScreen> createState() => _QuizGameScreenState();
