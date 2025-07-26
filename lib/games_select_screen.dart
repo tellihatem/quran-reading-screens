@@ -18,7 +18,7 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 800; // Threshold for large screens
-    
+
     // Define the games list
     final games = [
       {
@@ -33,13 +33,14 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MemoryGameScreen(
-                  selectedSurahs: surahs,
-                  onGameCompleted: (score) {
-                    // Handle game completion if needed
-                    Navigator.pop(context);
-                  },
-                ),
+                builder:
+                    (context) => MemoryGameScreen(
+                      selectedSurahs: surahs,
+                      onGameCompleted: (score) {
+                        // Handle game completion if needed
+                        Navigator.pop(context);
+                      },
+                    ),
               ),
             );
           }
@@ -57,13 +58,14 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AyahOrderingScreen(
-                  selectedSurahs: surahs,
-                  onGameCompleted: (score) {
-                    // Handle game completion if needed
-                    Navigator.pop(context);
-                  },
-                ),
+                builder:
+                    (context) => AyahOrderingScreen(
+                      selectedSurahs: surahs,
+                      onGameCompleted: (score) {
+                        // Handle game completion if needed
+                        Navigator.pop(context);
+                      },
+                    ),
               ),
             );
           }
@@ -81,18 +83,14 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => QuizGameScreen(
-                  selectedSurahs: surahs,
-                  onGameCompleted: (score) {
-                    // Handle game completion if needed
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('سيتم إضافة اللعبة قريباً'),
+                builder:
+                    (context) => QuizGameScreen(
+                      selectedSurahs: surahs,
+                      onGameCompleted: (score) {
+                        // Handle game completion if needed
+                        Navigator.pop(context);
+                      },
+                    ),
               ),
             );
           }
@@ -106,9 +104,10 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
           'الألعاب',
           style: GoogleFonts.amiri(fontSize: 24, color: Colors.white),
         ),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF2196F3)
-            : Theme.of(context).appBarTheme.backgroundColor,
+        backgroundColor:
+            Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2196F3)
+                : Theme.of(context).appBarTheme.backgroundColor,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -124,18 +123,25 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.only(top: 24.0), // Add space below app bar
+                padding: const EdgeInsets.only(
+                  top: 24.0,
+                ), // Add space below app bar
                 child: Center(
                   child: Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 8,
                     runSpacing: 8,
-                    children: games.map((game) => _buildGameCard(
-                      context: context,
-                      title: game['title'] as String,
-                      icon: game['icon'] as IconData,
-                      onTap: game['onTap'] as VoidCallback,
-                    )).toList(),
+                    children:
+                        games
+                            .map(
+                              (game) => _buildGameCard(
+                                context: context,
+                                title: game['title'] as String,
+                                icon: game['icon'] as IconData,
+                                onTap: game['onTap'] as VoidCallback,
+                              ),
+                            )
+                            .toList(),
                   ),
                 ),
               ),
@@ -167,7 +173,7 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
       default:
         imageAsset = 'assets/games/correct_answer.png';
     }
-    
+
     return Container(
       width: 180, // Fixed width
       height: 170, // Fixed height
@@ -179,10 +185,7 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
           borderRadius: BorderRadius.circular(12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              imageAsset,
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset(imageAsset, fit: BoxFit.cover),
           ),
         ),
       ),

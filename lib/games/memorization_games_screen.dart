@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
+import '../widgets/background_widget.dart';
 
 class MemorizationGamesScreen extends StatefulWidget {
   final int surahNumber;
@@ -43,7 +44,7 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
   List<Map<String, dynamic>> _verses = [];
   List<Map<String, dynamic>> _shuffledVerses = [];
   final Random _random = Random();
-  
+
   // Quiz Game State
   List<Map<String, dynamic>> _questions = [];
   int _currentQuestionIndex = 0;
@@ -73,7 +74,7 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
   void _initializeAyahOrderingGame() {
     final surah = widget.surahNumber;
     final verseCount = quran.getVerseCount(surah);
-    
+
     // Get all verses for the surah
     _verses = List.generate(verseCount, (index) {
       final verseNumber = index + 1;
@@ -82,7 +83,7 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
         'number': verseNumber,
       };
     });
-    
+
     _shuffledVerses = List.from(_verses)..shuffle(_random);
     setState(() {});
   }
@@ -90,11 +91,14 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
   void _initializeQuizGame() {
     final surahName = quran.getSurahNameArabic(widget.surahNumber);
     final verseCount = quran.getVerseCount(widget.surahNumber);
-    final isMakki = quran.getPlaceOfRevelation(widget.surahNumber).toLowerCase().contains('makkah');
+    final isMakki = quran
+        .getPlaceOfRevelation(widget.surahNumber)
+        .toLowerCase()
+        .contains('makkah');
     final surahOrder = widget.surahNumber;
-    
+
     _questions = [];
-    
+
     // Add question about surah type (Makkah/Madinah)
     final surahTypeAnswers = ['مكية', 'مدنية'];
     final correctSurahTypeIndex = isMakki ? 0 : 1;
@@ -105,10 +109,12 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
       'correctIndex': correctSurahTypeIndex,
       'explanation': 'سورة $surahName ${isMakki ? 'مكية' : 'مدنية'}',
     });
-    
+
     // Add question about number of verses
     final verseCountAnswers = _generateRandomNumbers(verseCount, 4, 1, 286);
-    final correctVerseCountIndex = verseCountAnswers.indexOf(verseCount.toString());
+    final correctVerseCountIndex = verseCountAnswers.indexOf(
+      verseCount.toString(),
+    );
     _questions.add({
       'type': 'verse_count',
       'question': 'كم عدد آيات سورة $surahName؟',
@@ -116,10 +122,12 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
       'correctIndex': correctVerseCountIndex,
       'explanation': 'عدد آيات سورة $surahName هو $verseCount آية',
     });
-    
+
     // Add question about surah order in Quran
     final surahOrderAnswers = _generateRandomNumbers(surahOrder, 4, 1, 114);
-    final correctSurahOrderIndex = surahOrderAnswers.indexOf(surahOrder.toString());
+    final correctSurahOrderIndex = surahOrderAnswers.indexOf(
+      surahOrder.toString(),
+    );
     _questions.add({
       'type': 'surah_order',
       'question': 'ما هو ترتيب سورة $surahName في القرآن الكريم؟',
@@ -127,39 +135,51 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
       'correctIndex': correctSurahOrderIndex,
       'explanation': 'ترتيب سورة $surahName في القرآن الكريم هو $surahOrder',
     });
-    
+
     // Add verse completion questions (2 questions)
     if (verseCount > 2) {
       for (int i = 0; i < 2 && i < verseCount - 1; i++) {
         final verseNum = _random.nextInt(verseCount - 1) + 1;
-        final verseText = quran.getVerse(widget.surahNumber, verseNum, verseEndSymbol: false);
+        final verseText = quran.getVerse(
+          widget.surahNumber,
+          verseNum,
+          verseEndSymbol: false,
+        );
         final words = verseText.split(' ');
-        
+
         if (words.length > 3) {
           final splitPoint = _random.nextInt(words.length - 2) + 1;
           final questionText = words.take(splitPoint).join(' ') + ' ...';
           final correctAnswer = words.skip(splitPoint).take(3).join(' ');
-          
+
           // Generate wrong answers
           Set<String> answerOptions = {correctAnswer};
           for (int j = 0; j < 3 && j < verseCount - 1; j++) {
             final wrongVerseNum = (verseNum + j + 1) % verseCount + 1;
             if (wrongVerseNum != verseNum) {
-              final wrongVerse = quran.getVerse(widget.surahNumber, wrongVerseNum, verseEndSymbol: false);
+              final wrongVerse = quran.getVerse(
+                widget.surahNumber,
+                wrongVerseNum,
+                verseEndSymbol: false,
+              );
               answerOptions.add(wrongVerse);
             }
           }
           while (answerOptions.length < 4) {
             final randomVerse = _random.nextInt(verseCount) + 1;
             if (randomVerse != verseNum) {
-              final otherVerse = quran.getVerse(widget.surahNumber, randomVerse, verseEndSymbol: false);
+              final otherVerse = quran.getVerse(
+                widget.surahNumber,
+                randomVerse,
+                verseEndSymbol: false,
+              );
               final otherWords = otherVerse.split(' ');
               if (otherWords.length > 3) {
                 answerOptions.add(otherWords.take(3).join(' '));
               }
             }
           }
-          
+
           _questions.add({
             'type': 'verse_completion',
             'question': 'أكمل الآية: $questionText',
@@ -170,23 +190,37 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
         }
       }
     }
-    
+
     // Add next verse questions (2 questions)
     if (verseCount > 3) {
       for (int i = 0; i < 2 && i < verseCount - 2; i++) {
         final verseNum = _random.nextInt(verseCount - 2) + 1;
-        final currentVerse = quran.getVerse(widget.surahNumber, verseNum, verseEndSymbol: false);
-        final nextVerse = quran.getVerse(widget.surahNumber, verseNum + 1, verseEndSymbol: false);
-        
+        final currentVerse = quran.getVerse(
+          widget.surahNumber,
+          verseNum,
+          verseEndSymbol: false,
+        );
+        final nextVerse = quran.getVerse(
+          widget.surahNumber,
+          verseNum + 1,
+          verseEndSymbol: false,
+        );
+
         // Generate wrong answers
         Set<String> answerOptions = {nextVerse};
         while (answerOptions.length < 4) {
           final randomVerse = _random.nextInt(verseCount) + 1;
           if (randomVerse != verseNum + 1) {
-            answerOptions.add(quran.getVerse(widget.surahNumber, randomVerse, verseEndSymbol: false));
+            answerOptions.add(
+              quran.getVerse(
+                widget.surahNumber,
+                randomVerse,
+                verseEndSymbol: false,
+              ),
+            );
           }
         }
-        
+
         _questions.add({
           'type': 'next_verse',
           'question': 'ما هي الآية التالية لـ: $currentVerse',
@@ -196,20 +230,28 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
         });
       }
     }
-    
+
     // Shuffle questions but keep the first three (basic info) questions first
     if (_questions.length > 3) {
       final basicQuestions = _questions.sublist(0, 3);
       final otherQuestions = _questions.sublist(3)..shuffle(_random);
-      _questions = [...basicQuestions, ...otherQuestions.take(7)]; // Total 10 questions max
+      _questions = [
+        ...basicQuestions,
+        ...otherQuestions.take(7),
+      ]; // Total 10 questions max
     }
-    
+
     _currentQuestionIndex = 0;
     _score = 0;
     setState(() {});
   }
-  
-  List<String> _generateRandomNumbers(int correctNumber, int count, int min, int max) {
+
+  List<String> _generateRandomNumbers(
+    int correctNumber,
+    int count,
+    int min,
+    int max,
+  ) {
     final numbers = {correctNumber};
     while (numbers.length < count) {
       numbers.add(min + _random.nextInt(max - min + 1));
@@ -228,46 +270,51 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(score >= 0.7 ? 'أحسنت! 🎉' : 'حاول مرة أخرى'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'لقد أتممت ${_games[gameIndex]['name']} بنجاح',
-              textAlign: TextAlign.center,
+      builder:
+          (context) => AlertDialog(
+            title: Text(score >= 0.7 ? 'أحسنت! 🎉' : 'حاول مرة أخرى'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'لقد أتممت ${_games[gameIndex]['name']} بنجاح',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'نقاطك: ${(score * 100).toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'نقاطك: ${(score * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+
+                  // Move to next game or show final results
+                  if (_currentGameIndex < _games.length - 1) {
+                    setState(() {
+                      _currentGameIndex++;
+                      _isGameInProgress = true;
+                      _initializeCurrentGame();
+                    });
+                  } else {
+                    _showFinalResults();
+                  }
+                },
+                child: Text(
+                  _currentGameIndex < _games.length - 1
+                      ? 'اللعبة التالية'
+                      : 'إنهاء',
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              
-              // Move to next game or show final results
-              if (_currentGameIndex < _games.length - 1) {
-                setState(() {
-                  _currentGameIndex++;
-                  _isGameInProgress = true;
-                  _initializeCurrentGame();
-                });
-              } else {
-                _showFinalResults();
-              }
-            },
-            child: Text(_currentGameIndex < _games.length - 1 ? 'اللعبة التالية' : 'إنهاء'),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -292,74 +339,72 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(passedOverall ? 'تهانينا! 🎉' : 'انتهت الاختبارات'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              passedOverall
-                  ? 'لقد أتممت جميع الاختبارات بنجاح!'
-                  : 'انتهت جميع الاختبارات.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
+      builder:
+          (context) => AlertDialog(
+            title: Text(passedOverall ? 'تهانينا! 🎉' : 'انتهت الاختبارات'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  passedOverall
+                      ? 'لقد أتممت جميع الاختبارات بنجاح!'
+                      : 'انتهت جميع الاختبارات.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'النتائج:',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  resultMessage,
+                  style: GoogleFonts.amiri(fontSize: 20, height: 1.8),
+                  textAlign: TextAlign.right,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'المعدل النهائي: ${(averageScore * 100).toInt()}%',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: passedOverall ? Colors.green : Colors.orange,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'النتائج:',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // Go back to previous screen
+                },
+                child: const Text('إنهاء'),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              resultMessage,
-              style: GoogleFonts.amiri(
-                fontSize: 18,
-                height: 1.8,
-              ),
-              textAlign: TextAlign.right,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'المعدل النهائي: ${(averageScore * 100).toInt()}%',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: passedOverall ? Colors.green : Colors.orange,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(); // Go back to previous screen
-            },
-            child: const Text('إنهاء'),
+              if (!passedOverall) ...[
+                TextButton(
+                  onPressed: () {
+                    // Reset and retry
+                    Navigator.of(context).pop();
+                    setState(() {
+                      _currentGameIndex = 0;
+                      _scores = List.filled(_games.length, 0.0);
+                      _isGameInProgress = true;
+                      _initializeCurrentGame();
+                    });
+                  },
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ],
           ),
-          if (!passedOverall) ...[
-            TextButton(
-              onPressed: () {
-                // Reset and retry
-                Navigator.of(context).pop();
-                setState(() {
-                  _currentGameIndex = 0;
-                  _scores = List.filled(_games.length, 0.0);
-                  _isGameInProgress = true;
-                  _initializeCurrentGame();
-                });
-              },
-              child: const Text('إعادة المحاولة'),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
@@ -395,24 +440,26 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(isCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة غير صحيحة'),
-        content: Text(isCorrect 
-          ? 'أحسنت! لقد رتبت الآيات بشكل صحيح.'
-          : 'حاول مرة أخرى. بعض الآيات ليست في مكانها الصحيح.'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              if (isCorrect) {
-                _onGameCompleted(score, _currentGameIndex);
-              }
-            },
-            child: const Text('حسناً'),
+      builder:
+          (context) => AlertDialog(
+            title: Text(isCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة غير صحيحة'),
+            content: Text(
+              isCorrect
+                  ? 'أحسنت! لقد رتبت الآيات بشكل صحيح.'
+                  : 'حاول مرة أخرى. بعض الآيات ليست في مكانها الصحيح.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (isCorrect) {
+                    _onGameCompleted(score, _currentGameIndex);
+                  }
+                },
+                child: const Text('حسناً'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -429,11 +476,12 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
                 final verse = _shuffledVerses[index];
                 return Card(
                   key: ValueKey(verse['number']),
-                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 8,
+                  ),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      child: Text('${verse['number']}'),
-                    ),
+                    leading: CircleAvatar(child: Text('${verse['number']}')),
                     title: Text(
                       verse['text'],
                       style: GoogleFonts.amiriQuran(
@@ -464,16 +512,19 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     setState(() {
       _selectedAnswerIndex = selectedIndex;
       _showFeedback = true;
-      
+
       final currentQuestion = _questions[_currentQuestionIndex];
-      if (currentQuestion['type'] == 'verse_completion' || 
+      if (currentQuestion['type'] == 'verse_completion' ||
           currentQuestion['type'] == 'next_verse') {
-        _isAnswerCorrect = selectedIndex == 
-            currentQuestion['answers'].indexOf(currentQuestion['correctAnswer']);
+        _isAnswerCorrect =
+            selectedIndex ==
+            currentQuestion['answers'].indexOf(
+              currentQuestion['correctAnswer'],
+            );
       } else {
         _isAnswerCorrect = selectedIndex == currentQuestion['correctIndex'];
       }
-      
+
       if (_isAnswerCorrect) {
         _score++;
       }
@@ -484,7 +535,7 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     setState(() {
       _showFeedback = false;
       _selectedAnswerIndex = null;
-      
+
       if (_currentQuestionIndex < _questions.length - 1) {
         _currentQuestionIndex++;
       } else {
@@ -503,114 +554,209 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     final currentQuestion = _questions[_currentQuestionIndex];
     final isLastQuestion = _currentQuestionIndex == _questions.length - 1;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Column(
-        children: [
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'السؤال ${_currentQuestionIndex + 1} من ${_questions.length}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.left,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    currentQuestion['question'],
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: currentQuestion['answers'].length,
-              itemBuilder: (context, index) {
-                final answer = currentQuestion['answers'][index];
-                bool isSelected = _selectedAnswerIndex == index;
-                bool isCorrect = _showFeedback && (
-                  (currentQuestion['type'] == 'verse_completion' || 
-                   currentQuestion['type'] == 'next_verse')
-                      ? answer == currentQuestion['correctAnswer']
-                      : index == currentQuestion['correctIndex']
-                );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLargeScreen = constraints.maxWidth > 700;
+        final questionBg =
+            isLargeScreen
+                ? 'assets/games/question_big.png'
+                : 'assets/games/question_small_small.png';
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  color: _showFeedback
-                      ? isCorrect
-                          ? Colors.green.withOpacity(0.2)
-                          : isSelected
-                              ? Colors.red.withOpacity(0.2)
-                              : null
-                      : isSelected
-                          ? Theme.of(context).primaryColor.withOpacity(0.1)
-                          : null,
-                  child: ListTile(
-                    title: Text(
-                      answer,
-                      style: GoogleFonts.amiriQuran(
-                        fontSize: 18,
-                        color: _showFeedback && isCorrect ? Colors.green : null,
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Column(
+            children: [
+              // Question Container with Background
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
+                height: 150, // Fixed height for consistency
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage(questionBg),
+                    fit: BoxFit.fill,
+                  ),
+                ),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 16.0,
+                    ),
+                    child: Text(
+                      currentQuestion['question'],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        height: 1.4,
                       ),
-                      textAlign: TextAlign.right,
+                      textAlign: TextAlign.center,
                     ),
-                    onTap: _showFeedback ? null : () => _checkQuizAnswer(index),
-                    trailing: _showFeedback && isCorrect
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : _showFeedback && isSelected
-                            ? const Icon(Icons.cancel, color: Colors.red)
-                            : null,
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+
+              // Answers List
+              Expanded(
+                child: ListView.builder(
+                  itemCount: currentQuestion['answers'].length,
+                  itemBuilder: (context, index) {
+                    final answer = currentQuestion['answers'][index];
+                    bool isSelected = _selectedAnswerIndex == index;
+                    bool isCorrect =
+                        _showFeedback &&
+                        ((currentQuestion['type'] == 'verse_completion' ||
+                                currentQuestion['type'] == 'next_verse')
+                            ? answer == currentQuestion['correctAnswer']
+                            : index == currentQuestion['correctIndex']);
+
+                    final answerBg =
+                        isLargeScreen
+                            ? 'assets/games/answer_big.png'
+                            : 'assets/games/answer_small_small.png';
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: Container(
+                        height: 60, // Fixed height for answer items
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage(answerBg),
+                            fit: BoxFit.fill,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background and tap target
+                            Material(
+                              color: Colors.white,
+                              child: InkWell(
+                                onTap: _showFeedback ? null : () => _checkQuizAnswer(index),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      answer,
+                                      style: const TextStyle(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 20,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Correct/Wrong icon (only shown when feedback is visible and answer is selected)
+                            if (_showFeedback && isSelected)
+                              Positioned(
+                                right: 8,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: Image.asset(
+                                    isCorrect 
+                                        ? 'assets/games/correct_small.png' 
+                                        : 'assets/games/wrong_small.png',
+                                    width: 24,
+                                    height: 24,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Feedback Section
+              if (_showFeedback)
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _isAnswerCorrect ? Colors.green[50] : Colors.red[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          _isAnswerCorrect
+                              ? Colors.green[200]!
+                              : Colors.red[200]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _isAnswerCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة خاطئة',
+                        style: TextStyle(
+                          color:
+                              _isAnswerCorrect
+                                  ? Colors.green[800]
+                                  : Colors.red[800],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      if (currentQuestion['explanation'] != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          currentQuestion['explanation'],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                _isAnswerCorrect ? Colors.green : Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: _nextQuestion,
+                          child: Text(
+                            isLastQuestion ? 'انتهى الاختبار' : 'السؤال التالي',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
-          if (_showFeedback) ...[
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Text(
-                    _isAnswerCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة خاطئة',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: _isAnswerCorrect ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currentQuestion['explanation'],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
-              child: ElevatedButton(
-                onPressed: _nextQuestion,
-                child: Text(isLastQuestion ? 'انتهاء الاختبار' : 'السؤال التالي'),
-              ),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -633,7 +779,7 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
             const SizedBox(height: 10),
             Text(
               _games[_currentGameIndex]['description'],
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 20, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
@@ -663,51 +809,70 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        body: Stack(
-          children: [
-            // Background or other widgets
-            _buildGameScreen(),
-            if (!_isGameInProgress)
-              Positioned(
-                bottom: 20,
-                left: 20,
-                right: 20,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(
-                    _games.length,
-                    (index) => Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color:
-                            _scores[index] > 0
-                                ? (_scores[index] >= _games[index]['minScore']
-                                    ? Colors.green
-                                    : Colors.orange)
-                                : Colors.grey[300],
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text(
+          _games[_currentGameIndex]['name'],
+          style: GoogleFonts.tajawal(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: BackgroundWidget(
+        child: SafeArea(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Stack(
+              children: [
+                _buildGameScreen(),
+                if (!_isGameInProgress)
+                  Positioned(
+                    bottom: 20,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _games.length,
+                        (index) => Container(
+                          width: 30,
+                          height: 30,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
                             color:
                                 _scores[index] > 0
-                                    ? Colors.white
-                                    : Colors.black,
-                            fontWeight: FontWeight.bold,
+                                    ? (_scores[index] >=
+                                            _games[index]['minScore']
+                                        ? Colors.green
+                                        : Colors.orange)
+                                    : Colors.grey[300],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                color:
+                                    _scores[index] > 0
+                                        ? Colors.white
+                                        : Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

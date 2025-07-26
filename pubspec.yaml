@@ -79,6 +79,12 @@ flutter:
     - assets/games/ayah_order.png
     - assets/games/correct_answer.png
     - assets/games/memory_game.png
+    - assets/games/question_big.png
+    - assets/games/question_small_small.png
+    - assets/games/answer_big.png
+    - assets/games/answer_small_small.png
+    - assets/games/correct_small.png
+    - assets/games/wrong_small.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
