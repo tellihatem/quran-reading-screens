@@ -85,6 +85,20 @@ flutter:
     - assets/games/answer_small_small.png
     - assets/games/correct_small.png
     - assets/games/wrong_small.png
+    - assets/games/button_small.png
+    - assets/games/button_big.png
+    - assets/games/correct_background.png
+    - assets/games/wrong_background.png
+    - assets/games/correct_background_big.png
+    - assets/games/wrong_background_big.png
+    - assets/games/win_result.png
+    - assets/games/loss_result.png
+    - assets/games/win_result_big.png
+    - assets/games/loss_result_big.png
+    - assets/games/next.png
+    - assets/games/next_big.png
+    - assets/games/retry.png
+    - assets/games/retry_big.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

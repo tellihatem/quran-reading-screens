@@ -44,6 +44,8 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
   List<Map<String, dynamic>> _verses = [];
   List<Map<String, dynamic>> _shuffledVerses = [];
   final Random _random = Random();
+  int _mistakesCount = 0;
+  bool _hasShownMistakeFeedback = false;
 
   // Quiz Game State
   List<Map<String, dynamic>> _questions = [];
@@ -74,6 +76,10 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
   void _initializeAyahOrderingGame() {
     final surah = widget.surahNumber;
     final verseCount = quran.getVerseCount(surah);
+
+    // Reset mistake tracking
+    _mistakesCount = 0;
+    _hasShownMistakeFeedback = false;
 
     // Get all verses for the surah
     _verses = List.generate(verseCount, (index) {
@@ -271,49 +277,113 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
       context: context,
       barrierDismissible: false,
       builder:
-          (context) => AlertDialog(
-            title: Text(score >= 0.7 ? 'أحسنت! 🎉' : 'حاول مرة أخرى'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'لقد أتممت ${_games[gameIndex]['name']} بنجاح',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'نقاطك: ${(score * 100).toInt()}%',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: EdgeInsets.all(16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isLargeScreen = constraints.maxWidth > 600;
+                final isCorrect = score >= 0.7;
+                final backgroundImage =
+                    isCorrect
+                        ? (isLargeScreen
+                            ? 'assets/games/correct_background_big.png'
+                            : 'assets/games/correct_background.png')
+                        : (isLargeScreen
+                            ? 'assets/games/wrong_background_big.png'
+                            : 'assets/games/wrong_background.png');
 
-                  // Move to next game or show final results
-                  if (_currentGameIndex < _games.length - 1) {
-                    setState(() {
-                      _currentGameIndex++;
-                      _isGameInProgress = true;
-                      _initializeCurrentGame();
-                    });
-                  } else {
-                    _showFinalResults();
-                  }
-                },
-                child: Text(
-                  _currentGameIndex < _games.length - 1
-                      ? 'اللعبة التالية'
-                      : 'إنهاء',
-                ),
-              ),
-            ],
+                return Stack(
+                  children: [
+                    // Background image
+                    Image.asset(backgroundImage, fit: BoxFit.contain),
+
+                    // Content
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        40,
+                        isLargeScreen ? 100 : 50,
+                        isLargeScreen ? 200 : 40,
+                        12,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isCorrect ? 'أحسنت! 🎉' : 'حاول مرة أخرى',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'لقد أتممت ${_games[gameIndex]['name']} بنجاح',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'نقاطك: ${(score * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          /// 👉 Remove inherited padding from this only
+                          Padding(
+                            padding: EdgeInsets.zero,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                if (gameIndex < _games.length - 1) {
+                                  setState(() {
+                                    _currentGameIndex++;
+                                    _isGameInProgress = true;
+                                    _initializeCurrentGame();
+                                  });
+                                } else {
+                                  _showFinalResults();
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                gameIndex < _games.length - 1
+                                    ? 'اللعبة التالية'
+                                    : 'إنهاء',
+                                style: const TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
     );
   }
@@ -340,70 +410,160 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
       context: context,
       barrierDismissible: false,
       builder:
-          (context) => AlertDialog(
-            title: Text(passedOverall ? 'تهانينا! 🎉' : 'انتهت الاختبارات'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  passedOverall
-                      ? 'لقد أتممت جميع الاختبارات بنجاح!'
-                      : 'انتهت جميع الاختبارات.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'النتائج:',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  resultMessage,
-                  style: GoogleFonts.amiri(fontSize: 20, height: 1.8),
-                  textAlign: TextAlign.right,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'المعدل النهائي: ${(averageScore * 100).toInt()}%',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: passedOverall ? Colors.green : Colors.orange,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: EdgeInsets.all(16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isLargeScreen = constraints.maxWidth > 600;
+                final backgroundImage =
+                    passedOverall
+                        ? (isLargeScreen
+                            ? 'assets/games/win_result_big.png'
+                            : 'assets/games/win_result.png')
+                        : (isLargeScreen
+                            ? 'assets/games/loss_result_big.png'
+                            : 'assets/games/loss_result.png');
+
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Background image
+                    Image.asset(backgroundImage, fit: BoxFit.contain),
+
+                    // Content
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        40,
+                        120, // More top padding on mobile
+                        40,
+                        0,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            passedOverall ? 'تهانينا! 🎉' : 'انتهت الاختبارات',
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 24 : 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            passedOverall
+                                ? 'أتممت جميع الاختبارات بنجاح!'
+                                : 'انتهت جميع الاختبارات.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 18 : 16,
+                              fontWeight: FontWeight.w600, // Bolder text
+                              color: Colors.white,
+                              height: 1.4, // Better line height
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'النتائج:',
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 20 : 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            resultMessage,
+                            style: GoogleFonts.amiri(
+                              fontSize: isLargeScreen ? 20 : 18,
+                              fontWeight: FontWeight.w600, // Bolder text
+                              height:
+                                  0.8, // More line height for better readability
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'المعدل النهائي: ${(averageScore * 100).toInt()}%',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: isLargeScreen ? 22 : 18,
+                              color:
+                                  passedOverall
+                                      ? const Color.fromARGB(255, 0, 94, 3)
+                                      : const Color.fromARGB(255, 255, 3, 3),
+                              height:
+                                  isLargeScreen
+                                      ? 1.4
+                                      : 0.1, // Further reduced height for mobile
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 30),
+                          // Add bottom padding container for large screens
+                          Container(
+                            margin:
+                                isLargeScreen
+                                    ? const EdgeInsets.only(top: 150.0)
+                                    : EdgeInsets.zero,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (!passedOverall) ...[
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.of(context).pop();
+                                      setState(() {
+                                        _currentGameIndex = 0;
+                                        _scores = List.filled(
+                                          _games.length,
+                                          0.0,
+                                        );
+                                        _isGameInProgress = true;
+                                        _initializeCurrentGame();
+                                      });
+                                    },
+                                    child: Image.asset(
+                                      isLargeScreen
+                                          ? 'assets/games/retry_big.png'
+                                          : 'assets/games/retry.png',
+                                      width: isLargeScreen ? 150 : 120,
+                                      height: isLargeScreen ? 60 : 50,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                ],
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Image.asset(
+                                    isLargeScreen
+                                        ? 'assets/games/next_big.png'
+                                        : 'assets/games/next.png',
+                                    width: isLargeScreen ? 80 : 60,
+                                    height: isLargeScreen ? 80 : 60,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop(); // Go back to previous screen
-                },
-                child: const Text('إنهاء'),
-              ),
-              if (!passedOverall) ...[
-                TextButton(
-                  onPressed: () {
-                    // Reset and retry
-                    Navigator.of(context).pop();
-                    setState(() {
-                      _currentGameIndex = 0;
-                      _scores = List.filled(_games.length, 0.0);
-                      _isGameInProgress = true;
-                      _initializeCurrentGame();
-                    });
-                  },
-                  child: const Text('إعادة المحاولة'),
-                ),
-              ],
-            ],
           ),
     );
   }
@@ -428,39 +588,72 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
       }
     }
 
-    // Calculate score based on number of correct positions
-    int correctCount = 0;
-    for (int i = 0; i < _verses.length; i++) {
-      if (_shuffledVerses[i]['number'] == _verses[i]['number']) {
-        correctCount++;
+    if (!isCorrect && !_hasShownMistakeFeedback) {
+      if (_mistakesCount >= 1) {
+        // Show feedback about the mistake and move to next game
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('حاول مرة أخرى'),
+                content: const Text(
+                  'لقد أخطأت في ترتيب الآيات. سيتم نقلك إلى اللعبة التالية.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _onGameCompleted(0.0, _currentGameIndex);
+                    },
+                    child: const Text('حسناً'),
+                  ),
+                ],
+              ),
+        );
+        return;
+      } else {
+        _mistakesCount++;
+        _hasShownMistakeFeedback = true;
+        // Show feedback about the mistake
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('حاول مرة أخرى'),
+                content: const Text(
+                  'الترتيب غير صحيح. لديك محاولة واحدة أخرى.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('حسناً'),
+                  ),
+                ],
+              ),
+        );
+        return;
       }
     }
-    double score = correctCount / _verses.length;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: Text(isCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة غير صحيحة'),
-            content: Text(
-              isCorrect
-                  ? 'أحسنت! لقد رتبت الآيات بشكل صحيح.'
-                  : 'حاول مرة أخرى. بعض الآيات ليست في مكانها الصحيح.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (isCorrect) {
-                    _onGameCompleted(score, _currentGameIndex);
-                  }
-                },
-                child: const Text('حسناً'),
-              ),
-            ],
-          ),
-    );
+    // If we reached here, either it's correct or we're allowing another attempt
+    if (isCorrect) {
+      // Calculate score based on number of correct positions
+      int correctCount = 0;
+      for (int i = 0; i < _verses.length; i++) {
+        if (_shuffledVerses[i]['number'] == _verses[i]['number']) {
+          correctCount++;
+        }
+      }
+
+      double score = correctCount / _verses.length;
+      _onGameCompleted(score, _currentGameIndex);
+    } else {
+      // If we get here, it means the order is still incorrect after one mistake
+      // This should not happen as we handle the first mistake case above
+      // But just in case, we'll show an error and move to next game
+      _onGameCompleted(0.0, _currentGameIndex);
+    }
   }
 
   Widget _buildAyahOrderingGame() {
@@ -497,9 +690,34 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              onPressed: _checkAyahOrder,
-              child: const Text('تحقق من الإجابة'),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isLargeScreen = constraints.maxWidth > 600;
+                return GestureDetector(
+                  onTap: _checkAyahOrder,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Image.asset(
+                        isLargeScreen
+                            ? 'assets/games/button_big.png'
+                            : 'assets/games/button_small.png',
+                        fit: BoxFit.contain,
+                      ),
+                      Text(
+                        'تحقق من الإجابة',
+                        style: GoogleFonts.kufam(
+                          fontSize: isLargeScreen ? 24 : 20,
+                          fontWeight:
+                              isLargeScreen ? FontWeight.bold : FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -625,61 +843,68 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
                         horizontal: 16,
                         vertical: 6,
                       ),
-                      child: Container(
-                        height: 60, // Fixed height for answer items
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage(answerBg),
-                            fit: BoxFit.fill,
-                          ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap:
+                              _showFeedback
+                                  ? null
+                                  : () => _checkQuizAnswer(index),
                           borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Background and tap target
-                            Material(
-                              color: Colors.white,
-                              child: InkWell(
-                                onTap: _showFeedback ? null : () => _checkQuizAnswer(index),
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  child: Center(
+                          child: Container(
+                            height: 60, // Fixed height for answer items
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage(answerBg),
+                                fit: BoxFit.fill,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Stack(
+                              children: [
+                                // Answer text
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
                                     child: Text(
                                       answer,
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 20,
+                                      style: TextStyle(
+                                        color: Color.fromARGB(
+                                          255,
+                                          255,
+                                          255,
+                                          255,
+                                        ),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: isLargeScreen ? 24 : 20,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            
-                            // Correct/Wrong icon (only shown when feedback is visible and answer is selected)
-                            if (_showFeedback && isSelected)
-                              Positioned(
-                                right: 8,
-                                top: 0,
-                                bottom: 0,
-                                child: Center(
-                                  child: Image.asset(
-                                    isCorrect 
-                                        ? 'assets/games/correct_small.png' 
-                                        : 'assets/games/wrong_small.png',
-                                    width: 24,
-                                    height: 24,
-                                    fit: BoxFit.contain,
+                                // Correct/Wrong icon (only shown when feedback is visible and answer is selected)
+                                if (_showFeedback && isSelected)
+                                  Positioned(
+                                    right: 8,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Center(
+                                      child: Image.asset(
+                                        isCorrect
+                                            ? 'assets/games/correct_small.png'
+                                            : 'assets/games/wrong_small.png',
+                                        width: 24,
+                                        height: 24,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                          ],
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     );
