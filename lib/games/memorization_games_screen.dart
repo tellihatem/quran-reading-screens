@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'dart:developer' as developer;
 import '../widgets/background_widget.dart';
 
 class MemorizationGamesScreen extends StatefulWidget {
@@ -388,6 +390,22 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     );
   }
 
+  Future<void> _savePassedSurah() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
+      final surahKey = 'surah_${widget.surahNumber}';
+      
+      if (!passedSurahs.contains(surahKey)) {
+        passedSurahs.add(surahKey);
+        await prefs.setStringList('passed_surahs', passedSurahs);
+        developer.log('Successfully saved passed surah: $surahKey');
+      }
+    } catch (e) {
+      developer.log('Error saving passed surah: $e');
+    }
+  }
+
   void _showFinalResults() {
     bool allPassed = true;
     String resultMessage = '';
@@ -405,6 +423,11 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     // Calculate average score
     final averageScore = totalScore / _games.length;
     final passedOverall = averageScore >= 0.7; // 70% minimum passing score
+    
+    // Save to SharedPreferences if passed
+    if (passedOverall) {
+      _savePassedSurah();
+    }
 
     showDialog(
       context: context,
@@ -510,7 +533,7 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
                           Container(
                             margin:
                                 isLargeScreen
-                                    ? const EdgeInsets.only(top: 150.0)
+                                    ? const EdgeInsets.only(top: 100.0)
                                     : EdgeInsets.zero,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -568,7 +591,6 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     );
   }
 
-  // Ayah Ordering Game Methods
   void _onAyahReorder(int oldIndex, int newIndex) {
     setState(() {
       if (newIndex > oldIndex) {

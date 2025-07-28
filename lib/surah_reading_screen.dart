@@ -11,6 +11,7 @@ import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quran/quran.dart' as quran;
 import 'games/memorization_games_screen.dart';
+import 'screens/surah_recording_test_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -1388,47 +1389,43 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                 ),
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    final surahName = quran.getSurahNameArabic(
-                      widget.surahNumber,
-                    );
+                    final prefs = await SharedPreferences.getInstance();
+                    final isMemorized = prefs.getBool('surah_${widget.surahNumber}_memorized') ?? false;
+                    final surahName = quran.getSurahNameArabic(widget.surahNumber);
 
-                    await MemorizationConfirmationDialog.show(
-                      context,
-                      surahNumber: widget.surahNumber,
-                      surahName: surahName,
-                      onConfirm: () {
-                        _markSurahAsMemorized();
-                        
-                        // Navigate to memorization games screen without adding to back stack
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Scaffold(
-                              body: MemorizationGamesScreen(
-                                surahNumber: widget.surahNumber,
-                                surahName: surahName,
+                    if (isMemorized) {
+                      // Navigate to recording test screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SurahRecordingTestScreen(
+                            surahNumber: widget.surahNumber,
+                            surahName: surahName,
+                          ),
+                        ),
+                      );
+                    } else {
+                      await MemorizationConfirmationDialog.show(
+                        context,
+                        surahNumber: widget.surahNumber,
+                        surahName: surahName,
+                        onConfirm: () {
+                          _markSurahAsMemorized();
+                          // Navigate to memorization games screen without adding to back stack
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Scaffold(
+                                body: MemorizationGamesScreen(
+                                  surahNumber: widget.surahNumber,
+                                  surahName: surahName,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                        
-                        // Show a quick snackbar to inform the user
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'حسناً! سنبدأ اختبار حفظك لسورة $surahName',
-                              textAlign: TextAlign.center,
-                            ),
-                            duration: Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        );
-                      },
-                    );
+                          );
+                        },
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
@@ -1516,26 +1513,27 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
 
   void _markSurahAsMemorized() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Check if surah is already memorized
-    final isAlreadyMemorized = prefs.getBool('surah_${widget.surahNumber}_memorized') ?? false;
-    
+    final isAlreadyMemorized =
+        prefs.getBool('surah_${widget.surahNumber}_memorized') ?? false;
+
     if (!isAlreadyMemorized) {
       // Mark as memorized
       await prefs.setBool('surah_${widget.surahNumber}_memorized', true);
-      
+
       // Get current global star count (default to 0 if not set)
       final currentGlobalStars = prefs.getInt('global_star_count') ?? 0;
-      
+
       // Add 1 star to the global counter
       await prefs.setInt('global_star_count', currentGlobalStars + 1);
     }
-    
+
     // Notify parent widget if provided
     if (widget.onSurahMemorized != null) {
       widget.onSurahMemorized!();
     }
-    
+
     // Update UI if needed
     if (mounted) {
       setState(() {

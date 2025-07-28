@@ -7,6 +7,7 @@ class SurahCard extends StatelessWidget {
   final bool isUnlocked;
   final bool isFromHifzScreen;
   final bool isMemorized;
+  final bool isPassed;
   final VoidCallback? onMemorized;
 
   // Fixed dimensions to match the image sizes
@@ -31,6 +32,7 @@ class SurahCard extends StatelessWidget {
     required this.isUnlocked,
     this.isFromHifzScreen = false,
     this.isMemorized = false,
+    this.isPassed = false,
     this.onMemorized,
   }) : super(key: key);
 
@@ -163,7 +165,9 @@ class SurahCard extends StatelessWidget {
         left: startX + starWidth + starSpacing,
         top: starTop,
         child: Image.asset(
-          'assets/cards/star_mid.png',
+          isPassed 
+              ? 'assets/cards/star_mid_success.png' 
+              : 'assets/cards/star_mid.png',
           width: centerStarWidth,
           height: centerStarHeight,
         ),

@@ -15,6 +15,7 @@ class HifzScreen extends StatefulWidget {
 
 class _HifzScreenState extends State<HifzScreen> {
   final Set<int> _memorizedSurahs = {};
+  final Set<int> _passedSurahs = {};
   bool _isLoading = true;
   int _threeStarSurahs = 0; // Counter for surahs with 3 stars
   int _totalStars = 0; // Counter for total stars across all surahs
@@ -35,8 +36,10 @@ class _HifzScreenState extends State<HifzScreen> {
     // Get the global star count
     final totalStars = prefs.getInt('global_star_count') ?? 0;
 
-    // Count memorized surahs and surahs with 3 stars
+    // Count memorized surahs, surahs with 3 stars, and load passed surahs
     int threeStarCount = 0;
+    final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
+    
     for (int i = 1; i <= 114; i++) {
       final isMemorized = prefs.getBool('surah_${i}_memorized') ?? false;
       if (isMemorized) {
@@ -47,6 +50,11 @@ class _HifzScreenState extends State<HifzScreen> {
       final surahStars = prefs.getInt('surah_${i}_stars') ?? 0;
       if (surahStars >= 3) {
         threeStarCount++;
+      }
+      
+      // Check if surah is passed
+      if (passedSurahs.contains('surah_$i')) {
+        _passedSurahs.add(i);
       }
     }
 
@@ -188,6 +196,7 @@ class _HifzScreenState extends State<HifzScreen> {
                             isUnlocked: isUnlocked,
                             isFromHifzScreen: true,
                             isMemorized: _memorizedSurahs.contains(surahNumber),
+                            isPassed: _passedSurahs.contains(surahNumber),
                             onMemorized: _loadMemorizedSurahs,
                           );
                     },
