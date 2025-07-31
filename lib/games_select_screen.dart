@@ -158,26 +158,42 @@ class _GamesSelectScreenState extends State<GamesSelectScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    // Get screen width to determine if we should use big images
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth > 600; // Threshold for large screens
+
     // Map game titles to their corresponding image assets
     String imageAsset;
     switch (title) {
       case 'لعبة الذاكرة':
-        imageAsset = 'assets/games/memory_game.png';
+        imageAsset =
+            isLargeScreen
+                ? 'assets/games/memory_game_big.png'
+                : 'assets/games/memory_game.png';
         break;
       case 'ترتيب الآيات':
-        imageAsset = 'assets/games/ayah_order.png';
+        imageAsset =
+            isLargeScreen
+                ? 'assets/games/ayah_order_big.png'
+                : 'assets/games/ayah_order.png';
         break;
       case 'اختر الإجابة الصحيحة':
-        imageAsset = 'assets/games/correct_answer.png';
+        imageAsset =
+            isLargeScreen
+                ? 'assets/games/correct_answer_big.png'
+                : 'assets/games/correct_answer.png';
         break;
       default:
-        imageAsset = 'assets/games/correct_answer.png';
+        imageAsset =
+            isLargeScreen
+                ? 'assets/games/correct_answer_big.png'
+                : 'assets/games/correct_answer.png';
     }
 
     return Container(
-      width: 180, // Fixed width
-      height: 170, // Fixed height
-      margin: const EdgeInsets.all(4),
+      width: isLargeScreen ? 310 : 180, // Fixed width
+      height: isLargeScreen ? 259 : 170, // Fixed height
+      margin: EdgeInsets.all(isLargeScreen ? 20 : 5),
       child: Material(
         color: Colors.transparent,
         child: InkWell(

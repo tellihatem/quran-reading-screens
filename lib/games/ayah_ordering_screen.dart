@@ -10,7 +10,7 @@ class AyahOrderingScreen extends StatefulWidget {
   final Function(double) onGameCompleted;
 
   const AyahOrderingScreen({
-    super.key, 
+    super.key,
     required this.selectedSurahs,
     required this.onGameCompleted,
   });
@@ -22,7 +22,8 @@ class AyahOrderingScreen extends StatefulWidget {
 class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
   late List<int> _availableSurahs = [];
   late int _selectedSurah;
-  late List<Map<String, dynamic>> _verses = []; // Stores {text: verseText, number: verseNumber}
+  late List<Map<String, dynamic>> _verses =
+      []; // Stores {text: verseText, number: verseNumber}
   late List<Map<String, dynamic>> _shuffledVerses = [];
   final Random _random = Random();
 
@@ -32,7 +33,7 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
       // If we've used all surahs, reset the available list
       _availableSurahs = List.from(widget.selectedSurahs)..shuffle(_random);
     }
-    
+
     // Remove and return the first surah in the shuffled list
     return _availableSurahs.removeAt(0);
   }
@@ -48,37 +49,46 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
   void _initializeGame() {
     // Get the next surah from our queue
     _selectedSurah = _getNextSurah();
-    
+
     // Get the total number of verses in the selected surah
     final int verseCount = quran.getVerseCount(_selectedSurah);
-    
+
     // Make sure the surah has at least 5 verses
     if (verseCount < 5) {
       // If not enough verses, just use all available verses
       _verses = List.generate(verseCount, (index) {
         final verseNumber = index + 1;
         return {
-          'text': quran.getVerse(_selectedSurah, verseNumber, verseEndSymbol: false),
+          'text': quran.getVerse(
+            _selectedSurah,
+            verseNumber,
+            verseEndSymbol: false,
+          ),
           'number': verseNumber,
         };
       });
     } else {
       // Select a random starting point for 5 continuous verses
-      final int startVerse = _random.nextInt(verseCount - 4) + 1; // +1 because verses start from 1
-      
+      final int startVerse =
+          _random.nextInt(verseCount - 4) + 1; // +1 because verses start from 1
+
       // Get 5 continuous verses
       _verses = List.generate(5, (index) {
         final verseNumber = startVerse + index;
         return {
-          'text': quran.getVerse(_selectedSurah, verseNumber, verseEndSymbol: false),
+          'text': quran.getVerse(
+            _selectedSurah,
+            verseNumber,
+            verseEndSymbol: false,
+          ),
           'number': verseNumber,
         };
       });
     }
-    
+
     // Create a shuffled copy of the verses
     _shuffledVerses = List.from(_verses)..shuffle(_random);
-    
+
     if (mounted) setState(() {});
   }
 
@@ -95,49 +105,55 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
     // Show result
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          isCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة خاطئة',
-          style: GoogleFonts.notoKufiArabic(),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          isCorrect 
-              ? 'أحسنت! لقد رتبت الآيات بشكل صحيح.'
-              : 'حاول مرة أخرى. تأكد من ترتيب الآيات بشكل صحيح.',
-          style: GoogleFonts.notoKufiArabic(),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (isCorrect) {
-                // Load new verses only if the answer was correct
-                _initializeGame();
-              }
-            },
-            child: Text('حسناً', style: GoogleFonts.notoKufiArabic()),
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              isCorrect ? 'إجابة صحيحة! 🎉' : 'إجابة خاطئة',
+              style: GoogleFonts.notoKufiArabic(),
+              textAlign: TextAlign.center,
+            ),
+            content: Text(
+              isCorrect
+                  ? 'أحسنت! لقد رتبت الآيات بشكل صحيح.'
+                  : 'حاول مرة أخرى. تأكد من ترتيب الآيات بشكل صحيح.',
+              style: GoogleFonts.notoKufiArabic(),
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  if (isCorrect) {
+                    // Load new verses only if the answer was correct
+                    _initializeGame();
+                  }
+                },
+                child: Text('حسناً', style: GoogleFonts.notoKufiArabic()),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final bool isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+    final bool isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'ترتيب الآيات - سورة ${_verses.isNotEmpty ? quran.getSurahNameArabic(_selectedSurah) : ''}',
-          style: GoogleFonts.amiri(fontSize: isPortrait ? 20 : 16, color: Colors.white),
+          style: GoogleFonts.amiri(
+            fontSize: isPortrait ? 20 : 16,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: isDarkMode
-            ? const Color(0xFF2196F3)
-            : Theme.of(context).appBarTheme.backgroundColor,
+        backgroundColor:
+            isDarkMode
+                ? const Color(0xFF2196F3)
+                : Theme.of(context).appBarTheme.backgroundColor,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -180,21 +196,33 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
                           ElevatedButton.icon(
                             onPressed: _checkAnswer,
                             icon: const Icon(Icons.check_circle_outline),
-                            label: Text('تحقق', style: GoogleFonts.notoKufiArabic()),
+                            label: Text(
+                              'تحقق',
+                              style: GoogleFonts.notoKufiArabic(),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
                             ),
                           ),
                           ElevatedButton.icon(
                             onPressed: _initializeGame,
                             icon: const Icon(Icons.refresh),
-                            label: Text('جديد', style: GoogleFonts.notoKufiArabic()),
+                            label: Text(
+                              'جديد',
+                              style: GoogleFonts.notoKufiArabic(),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -214,7 +242,8 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
                       if (oldIndex < newIndex) {
                         newIndex--;
                       }
-                      final Map<String, dynamic> item = _shuffledVerses.removeAt(oldIndex);
+                      final Map<String, dynamic> item = _shuffledVerses
+                          .removeAt(oldIndex);
                       _shuffledVerses.insert(newIndex, item);
                     });
                   },
@@ -223,8 +252,12 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
                     final verse = _shuffledVerses[index];
                     return Card(
                       key: Key('verse_${verse['number']}'),
-                      color: isDarkMode ? Colors.blueGrey[900] : Colors.grey[100],
-                      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                      color:
+                          isDarkMode ? Colors.blueGrey[900] : Colors.grey[100],
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 8.0,
+                      ),
                       child: ListTile(
                         leading: const Icon(
                           Icons.drag_handle,
@@ -240,14 +273,6 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
                           textAlign: TextAlign.right,
                           textDirection: ui.TextDirection.rtl,
                         ),
-                        subtitle: Text(
-                          'آية ${verse['number']} من سورة ${quran.getSurahNameArabic(_selectedSurah)}',
-                          style: GoogleFonts.notoKufiArabic(
-                            fontSize: 14,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                          ),
-                          textAlign: TextAlign.left,
-                        ),
                       ),
                     );
                   },
@@ -255,8 +280,6 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
               ),
 
               const SizedBox(height: 16),
-
-
             ],
           ),
         ),

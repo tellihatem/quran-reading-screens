@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import 'dart:developer' as developer;
+import '../screens/surah_recording_test_screen.dart';
 import '../widgets/background_widget.dart';
 
 class MemorizationGamesScreen extends StatefulWidget {
@@ -23,7 +24,8 @@ class MemorizationGamesScreen extends StatefulWidget {
 
 enum GameType { ayahOrdering, quiz }
 
-class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
+class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
+    with SingleTickerProviderStateMixin {
   int _currentGameIndex = 0;
   final List<Map<String, dynamic>> _games = [
     {
@@ -56,15 +58,37 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
   bool _showFeedback = false;
   bool _isAnswerCorrect = false;
   int _score = 0;
-
-  List<double> _scores = [0, 0];
+  late List<double> _scores;
   bool _isGameInProgress = false;
+  late AnimationController _starController;
+  late Animation<double> _starAnimation;
+  bool _showStar = false;
 
   @override
   void initState() {
     super.initState();
+    _scores = List.filled(_games.length, 0.0);
     _isGameInProgress = true;
+    _starController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _starAnimation = Tween<double>(begin: 0.5, end: 1.5).animate(
+      CurvedAnimation(parent: _starController, curve: Curves.elasticOut),
+    )..addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _starController.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        _starController.forward();
+      }
+    });
     _initializeCurrentGame();
+  }
+
+  @override
+  void dispose() {
+    _starController.dispose();
+    super.dispose();
   }
 
   void _initializeCurrentGame() {
@@ -390,16 +414,59 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     );
   }
 
+  Future<void> _unlockNextSurah() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Get the current surah's position in the sequence
+      int currentSurahNumber = widget.surahNumber;
+      int nextSurahNumber;
+      
+      // Determine the next surah in the sequence: 1, 114, 113, ..., 2
+      if (currentSurahNumber == 1) {
+        nextSurahNumber = 114; // After 1, go to 114
+      } else if (currentSurahNumber == 2) {
+        return; // No surah after 2 in this sequence
+      } else {
+        nextSurahNumber = currentSurahNumber - 1; // Go to previous number (114->113, 113->112, etc.)
+      }
+      
+      // Only proceed if we have a valid next surah number
+      if (nextSurahNumber >= 1 && nextSurahNumber <= 114) {
+        final unlockedSurahs = prefs.getStringList('unlocked_surahs') ?? [];
+        final surahKey = 'surah_$nextSurahNumber';
+        
+        if (!unlockedSurahs.contains(surahKey)) {
+          unlockedSurahs.add(surahKey);
+          await prefs.setStringList('unlocked_surahs', unlockedSurahs);
+          developer.log('Unlocked next surah in sequence: $surahKey');
+        }
+      }
+    } catch (e) {
+      developer.log('Error unlocking next surah: $e');
+    }
+  }
+
   Future<void> _savePassedSurah() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
       final surahKey = 'surah_${widget.surahNumber}';
-      
+
       if (!passedSurahs.contains(surahKey)) {
+        // Add to passed surahs
         passedSurahs.add(surahKey);
         await prefs.setStringList('passed_surahs', passedSurahs);
+        
+        // Increment global star count
+        final currentStars = prefs.getInt('global_star_count') ?? 0;
+        await prefs.setInt('global_star_count', currentStars + 1);
+        
         developer.log('Successfully saved passed surah: $surahKey');
+        developer.log('Updated global_star_count to: ${currentStars + 1}');
+        
+        // Unlock next surah when current one is passed (2 stars)
+        await _unlockNextSurah();
       }
     } catch (e) {
       developer.log('Error saving passed surah: $e');
@@ -423,10 +490,15 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
     // Calculate average score
     final averageScore = totalScore / _games.length;
     final passedOverall = averageScore >= 0.7; // 70% minimum passing score
-    
-    // Save to SharedPreferences if passed
+
+    // Save to SharedPreferences if passed and start star animation
     if (passedOverall) {
-      _savePassedSurah();
+      _savePassedSurah().then((_) {
+        setState(() {
+          _showStar = true;
+        });
+        _starController.forward(from: 0);
+      });
     }
 
     showDialog(
@@ -528,12 +600,26 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
                             ),
                             textAlign: TextAlign.center,
                           ),
+                          if (passedOverall && _showStar)
+                            AnimatedBuilder(
+                              animation: _starAnimation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _starAnimation.value,
+                                  child: const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                    size: 60,
+                                  ),
+                                );
+                              },
+                            ),
                           const SizedBox(height: 30),
                           // Add bottom padding container for large screens
                           Container(
                             margin:
                                 isLargeScreen
-                                    ? const EdgeInsets.only(top: 100.0)
+                                    ? const EdgeInsets.only(top: 60)
                                     : EdgeInsets.zero,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -566,7 +652,18 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen> {
                                 GestureDetector(
                                   onTap: () {
                                     Navigator.of(context).pop();
-                                    Navigator.of(context).pop();
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                SurahRecordingTestScreen(
+                                                  surahNumber:
+                                                      widget.surahNumber,
+                                                  surahName: widget.surahName,
+                                                ),
+                                      ),
+                                    );
                                   },
                                   child: Image.asset(
                                     isLargeScreen

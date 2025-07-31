@@ -77,8 +77,11 @@ flutter:
     - assets/cards/star_mid_success.png
     - assets/hafiz/score.svg
     - assets/games/ayah_order.png
+    - assets/games/ayah_order_big.png
     - assets/games/correct_answer.png
+    - assets/games/correct_answer_big.png
     - assets/games/memory_game.png
+    - assets/games/memory_game_big.png
     - assets/games/question_big.png
     - assets/games/question_small_small.png
     - assets/games/answer_big.png

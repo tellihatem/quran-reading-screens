@@ -16,6 +16,7 @@ class HifzScreen extends StatefulWidget {
 class _HifzScreenState extends State<HifzScreen> {
   final Set<int> _memorizedSurahs = {};
   final Set<int> _passedSurahs = {};
+  final Set<int> _unlockedSurahs = {};
   bool _isLoading = true;
   int _threeStarSurahs = 0; // Counter for surahs with 3 stars
   int _totalStars = 0; // Counter for total stars across all surahs
@@ -33,12 +34,25 @@ class _HifzScreenState extends State<HifzScreen> {
     });
 
     final memorized = <int>{};
+    final unlocked = <int>{};
     // Get the global star count
     final totalStars = prefs.getInt('global_star_count') ?? 0;
 
     // Count memorized surahs, surahs with 3 stars, and load passed surahs
     int threeStarCount = 0;
     final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
+    final unlockedSurahs = prefs.getStringList('unlocked_surahs') ?? [];
+    
+    // Surah 1 is always unlocked by default
+    unlocked.add(1);
+    
+    // Add other unlocked surahs
+    for (final surahKey in unlockedSurahs) {
+      final surahNum = int.tryParse(surahKey.replaceAll('surah_', ''));
+      if (surahNum != null && surahNum > 1 && surahNum <= 114) {
+        unlocked.add(surahNum);
+      }
+    }
     
     for (int i = 1; i <= 114; i++) {
       final isMemorized = prefs.getBool('surah_${i}_memorized') ?? false;
@@ -62,6 +76,8 @@ class _HifzScreenState extends State<HifzScreen> {
       setState(() {
         _memorizedSurahs.clear();
         _memorizedSurahs.addAll(memorized);
+        _unlockedSurahs.clear();
+        _unlockedSurahs.addAll(unlocked);
         _totalStars = totalStars;
         _threeStarSurahs = threeStarCount;
         _isLoading = false;
@@ -185,8 +201,8 @@ class _HifzScreenState extends State<HifzScreen> {
                       final surahNumber = index == 0 ? 1 : 115 - index;
                       final surahName = getSurahNameArabic(surahNumber);
 
-                      // Only Surah 1 (Al-Fatiha) is unlocked by default
-                      final isUnlocked = surahNumber == 1;
+                      // Check if surah is unlocked
+                      final isUnlocked = _unlockedSurahs.contains(surahNumber);
                       return _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : SurahCard(

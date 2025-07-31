@@ -1390,28 +1390,19 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     final prefs = await SharedPreferences.getInstance();
-                    final isMemorized = prefs.getBool('surah_${widget.surahNumber}_memorized') ?? false;
+                    final surahKey = 'surah_${widget.surahNumber}';
+                    final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
+                    final hasPassedTest = passedSurahs.contains(surahKey);
                     final surahName = quran.getSurahNameArabic(widget.surahNumber);
 
-                    if (isMemorized) {
-                      // Navigate to recording test screen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SurahRecordingTestScreen(
-                            surahNumber: widget.surahNumber,
-                            surahName: surahName,
-                          ),
-                        ),
-                      );
-                    } else {
+                    if (!hasPassedTest) {
+                      // Scenario 1: Not passed memorization test
                       await MemorizationConfirmationDialog.show(
                         context,
                         surahNumber: widget.surahNumber,
                         surahName: surahName,
                         onConfirm: () {
                           _markSurahAsMemorized();
-                          // Navigate to memorization games screen without adding to back stack
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
@@ -1424,6 +1415,34 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                             ),
                           );
                         },
+                      );
+                    } else {
+                      // Scenario 2: Already passed memorization test
+                      await showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => AlertDialog(
+                          title: const Text('اختبار التسجيل'),
+                          content: const Text('لقد اجتزت اختبار الحفظ مسبقًا. الخطوة التالية: سجل صوتك للسورة لاختبار الحفظ.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                _markSurahAsMemorized();
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SurahRecordingTestScreen(
+                                      surahNumber: widget.surahNumber,
+                                      surahName: surahName,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text('متابعة'),
+                            ),
+                          ],
+                        ),
                       );
                     }
                   },
