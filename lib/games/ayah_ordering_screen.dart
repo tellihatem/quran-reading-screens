@@ -237,13 +237,13 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
               // Draggable verses list
               Expanded(
                 child: ReorderableListView.builder(
+                  buildDefaultDragHandles: false, // We'll use custom drag handles
                   onReorder: (oldIndex, newIndex) {
                     setState(() {
                       if (oldIndex < newIndex) {
                         newIndex--;
                       }
-                      final Map<String, dynamic> item = _shuffledVerses
-                          .removeAt(oldIndex);
+                      final Map<String, dynamic> item = _shuffledVerses.removeAt(oldIndex);
                       _shuffledVerses.insert(newIndex, item);
                     });
                   },
@@ -252,26 +252,61 @@ class _AyahOrderingScreenState extends State<AyahOrderingScreen> {
                     final verse = _shuffledVerses[index];
                     return Card(
                       key: Key('verse_${verse['number']}'),
-                      color:
-                          isDarkMode ? Colors.blueGrey[900] : Colors.grey[100],
+                      color: isDarkMode ? Colors.blueGrey[900] : Colors.grey[100],
                       margin: const EdgeInsets.symmetric(
-                        vertical: 4.0,
+                        vertical: 6.0,
                         horizontal: 8.0,
                       ),
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.drag_handle,
-                          color: Colors.grey,
-                        ),
-                        title: Text(
-                          verse['text'],
-                          style: GoogleFonts.amiri(
-                            fontSize: 20,
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                            height: 1.5,
+                      elevation: 2,
+                      child: InkWell(
+                        onTap: () {},
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Drag handle with larger touch target
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+                                child: ReorderableDragStartListener(
+                                  index: index,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      Icons.drag_handle,
+                                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Vertical divider
+                              Container(
+                                width: 1,
+                                height: 40,
+                                color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                              ),
+                              // Verse text
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                  child: Text(
+                                    verse['text'],
+                                    style: GoogleFonts.amiri(
+                                      fontSize: 20,
+                                      color: isDarkMode ? Colors.white : Colors.black87,
+                                      height: 1.5,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    textDirection: ui.TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.right,
-                          textDirection: ui.TextDirection.rtl,
                         ),
                       ),
                     );

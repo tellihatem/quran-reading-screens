@@ -42,90 +42,100 @@ class SurahCard extends StatelessWidget {
         isUnlocked ? 'assets/cards/unlocked.png' : 'assets/cards/locked.png';
 
     return GestureDetector(
-      onTap: isUnlocked ? () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SurahReadingScreen(
-              surahNumber: surahNumber,
-              isFromHifzScreen: isFromHifzScreen,
-              onSurahMemorized: isFromHifzScreen ? () {
-                // Notify parent widget that the surah was marked as memorized
-                if (onMemorized != null) {
-                  onMemorized!();
+      onTap:
+          isUnlocked
+              ? () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => SurahReadingScreen(
+                          surahNumber: surahNumber,
+                          isFromHifzScreen: isFromHifzScreen,
+                          onSurahMemorized:
+                              isFromHifzScreen
+                                  ? () {
+                                    // Notify parent widget that the surah was marked as memorized
+                                    if (onMemorized != null) {
+                                      onMemorized!();
+                                    }
+                                  }
+                                  : null,
+                        ),
+                  ),
+                );
+                if (result == true && onMemorized != null) {
+                  onMemorized!(); // Trigger parent reload (dynamic UI)
                 }
-              } : null,
-            ),
-          ),
-        );
-      } : null,
+              }
+              : null,
       child: LayoutBuilder(
         builder: (context, constraints) {
-        // Use the minimum of width and height to maintain aspect ratio
-        final cardWidth = constraints.maxWidth;
-        final cardHeight = constraints.maxHeight;
+          // Use the minimum of width and height to maintain aspect ratio
+          final cardWidth = constraints.maxWidth;
+          final cardHeight = constraints.maxHeight;
 
-        return Stack(
-          clipBehavior: Clip.none, // Allow children to overflow
-          children: [
-            // Background image with offset for unlocked cards
-            Positioned(
-              top:
-                  isUnlocked
-                      ? cardHeight * 0.08
-                      : 0.0, // 8% of card height if unlocked
-              child: Image.asset(
-                imagePath,
-                width: cardWidth,
-                height: cardHeight,
-                fit: BoxFit.contain,
+          return Stack(
+            clipBehavior: Clip.none, // Allow children to overflow
+            children: [
+              // Background image with offset for unlocked cards
+              Positioned(
+                top:
+                    isUnlocked
+                        ? cardHeight * 0.08
+                        : 0.0, // 8% of card height if unlocked
+                child: Image.asset(
+                  imagePath,
+                  width: cardWidth,
+                  height: cardHeight,
+                  fit: BoxFit.contain,
+                ),
               ),
-            ),
 
-            // Surah name - positioned at 45% from top
-            Positioned(
-              left: 0,
-              right: 0,
-              top: cardHeight * 0.45, // 45% from top
-              child: Center(
-                child: Text(
-                  surahName,
-                  style: TextStyle(
-                    fontSize: cardHeight * 0.15, // 15% of card height
-                    color:
-                        isUnlocked
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
+              // Surah name - positioned at 45% from top
+              Positioned(
+                left: 0,
+                right: 0,
+                top: cardHeight * 0.45, // 45% from top
+                child: Center(
+                  child: Text(
+                    surahName,
+                    style: TextStyle(
+                      fontSize: cardHeight * 0.15, // 15% of card height
+                      color:
+                          isUnlocked
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Stars (only for unlocked cards)
-            if (isUnlocked) ..._buildStars(cardWidth, cardHeight),
+              // Stars (only for unlocked cards)
+              if (isUnlocked) ..._buildStars(cardWidth, cardHeight),
 
-            // Surah number at the bottom
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: cardHeight * 0.01,
-              child: Center(
-                child: Text(
-                  surahNumber.toString().padLeft(3, '0'),
-                  style: TextStyle(
-                    fontSize: cardHeight * 0.1, // 10% of card height
-                    color:
-                        isUnlocked
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
+              // Surah number at the bottom
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: cardHeight * 0.01,
+                child: Center(
+                  child: Text(
+                    surahNumber.toString().padLeft(3, '0'),
+                    style: TextStyle(
+                      fontSize: cardHeight * 0.1, // 10% of card height
+                      color:
+                          isUnlocked
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
+            ],
+          );
         },
       ),
     );
@@ -153,8 +163,8 @@ class SurahCard extends StatelessWidget {
         left: startX,
         top: starSideTop,
         child: Image.asset(
-          isMemorized 
-              ? 'assets/cards/star_side_success.png' 
+          isMemorized
+              ? 'assets/cards/star_side_success.png'
               : 'assets/cards/star_side.png',
           width: starWidth,
           height: starHeight,
@@ -165,8 +175,8 @@ class SurahCard extends StatelessWidget {
         left: startX + starWidth + starSpacing,
         top: starTop,
         child: Image.asset(
-          isPassed 
-              ? 'assets/cards/star_mid_success.png' 
+          isPassed
+              ? 'assets/cards/star_mid_success.png'
               : 'assets/cards/star_mid.png',
           width: centerStarWidth,
           height: centerStarHeight,

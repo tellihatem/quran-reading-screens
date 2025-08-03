@@ -606,6 +606,8 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
           setState(() {
             _savedRecordingPath = newPath;
             _showPlaybackBar = true;
+            _isPlaying = false;
+            _currentPosition = Duration.zero;
           });
 
           // Initialize audio player
@@ -630,17 +632,17 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
         debugPrint('Error stopping recording: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error stopping recording')),
+            SnackBar(content: Text('Error stopping recording: $e')),
           );
         }
-      }
-
-      // Make sure verses are visible after stopping recording
-      if (mounted) {
-        setState(() {
-          _versesVisible = true;
-          _isRecording = false;
-        });
+      } finally {
+        // Make sure verses are visible after stopping recording
+        if (mounted) {
+          setState(() {
+            _versesVisible = true;
+            _isRecording = false;
+          });
+        }
       }
     } else {
       // Show dialog before starting recording
@@ -738,6 +740,7 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
   }
 
   // Handle verse tap
+  // Handle verse tap
   void _onVerseTap(int surahNumber, int verseNumber) async {
     final paddedSurah = surahNumber.toString().padLeft(3, '0');
     final audioUrl =
@@ -792,31 +795,31 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     int firstVerse,
     int lastVerse,
   ) async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Verse Information'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Surah Number: $surahNumber'),
-              Text('First Verse: $firstVerse'),
-              Text('Last Verse: $lastVerse'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
+    // showDialog(
+    //   context: context,
+    //   builder: (context) {
+    //     return AlertDialog(
+    //       title: Text('Verse Information'),
+    //       content: Column(
+    //         mainAxisSize: MainAxisSize.min,
+    //         crossAxisAlignment: CrossAxisAlignment.start,
+    //         children: [
+    //           Text('Surah Number: $surahNumber'),
+    //           Text('First Verse: $firstVerse'),
+    //           Text('Last Verse: $lastVerse'),
+    //         ],
+    //       ),
+    //       actions: [
+    //         TextButton(
+    //           onPressed: () {
+    //             Navigator.of(context).pop();
+    //           },
+    //           child: Text('Close'),
+    //         ),
+    //       ],
+    //     );
+    //   },
+    // );
 
     final paddedSurah = surahNumber.toString().padLeft(3, '0');
     final audioUrl =
@@ -1134,31 +1137,69 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
     });
   }
 
-  // Build the playback control bar
+  // Build the playback control bar for recorded audio
   Widget _buildPlaybackBar() {
+    if (_savedRecordingPath == null) return const SizedBox.shrink();
+
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      margin: const EdgeInsets.only(bottom: 20), // Add margin from bottom
       decoration: BoxDecoration(
-        color: Colors.transparent, // Fully transparent background
+        color:
+            isDarkMode
+                ? Colors.grey[900]!.withOpacity(0.95)
+                : Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            spreadRadius: 1,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header with title and close button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'تسجيلك',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close, size: 20),
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: _resetPlaybackBar,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
           // Progress bar
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor:
-                  isDarkMode ? Colors.green[300] : Colors.green[700],
+                  isDarkMode ? Colors.blue[300] : Colors.blue[700],
               inactiveTrackColor:
                   isDarkMode ? Colors.grey[800] : Colors.grey[300],
-              thumbColor: isDarkMode ? Colors.green[300] : Colors.green[700],
-              overlayColor: (isDarkMode
-                      ? Colors.green[300]
-                      : Colors.green[700])!
+              thumbColor: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+              overlayColor: (isDarkMode ? Colors.blue[300] : Colors.blue[700])!
                   .withOpacity(0.3),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+              trackHeight: 4,
             ),
             child: Slider(
               value: _currentPosition.inMilliseconds.toDouble(),
@@ -1167,15 +1208,14 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                 double.infinity,
               ),
               onChanged: (value) {
-                setState(() {
-                  _currentPosition = Duration(milliseconds: value.toInt());
-                });
-                _audioPlayer.seek(_currentPosition);
+                final newPosition = Duration(milliseconds: value.toInt());
+                setState(() => _currentPosition = newPosition);
+                _audioPlayer.seek(newPosition);
               },
             ),
           ),
 
-          // Controls
+          // Time indicators and controls
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1188,16 +1228,128 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                 ),
               ),
 
-              // Play/Pause button
-              IconButton(
-                icon: Icon(
-                  _isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled,
-                  size: 36,
-                  color: isDarkMode ? Colors.green[300] : Colors.green[700],
-                ),
-                onPressed: _togglePlayback,
+              // Action buttons
+              Row(
+                children: [
+                  // Play/Pause button
+                  IconButton(
+                    icon: Icon(
+                      _isPlaying
+                          ? Icons.stop_circle
+                          : Icons.play_circle_filled,
+                      size: 40,
+                      color: isDarkMode ? Colors.blue[300] : Colors.blue[700],
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () async {
+                      if (_savedRecordingPath != null && File(_savedRecordingPath!).existsSync()) {
+                        if (_isPlaying) {
+                          await _audioPlayer.pause();
+                          setState(() => _isPlaying = false);
+                        } else {
+                          try {
+                            await _audioPlayer.setFilePath(_savedRecordingPath!);
+                            await _audioPlayer.play();
+                            setState(() => _isPlaying = true);
+                            
+                            // Update position stream
+                            _positionSubscription?.cancel();
+                            _positionSubscription = _audioPlayer.positionStream.listen((position) {
+                              if (mounted) {
+                                setState(() => _currentPosition = position);
+                              }
+                            });
+                            
+                            // Handle playback completion
+                            _audioPlayer.playerStateStream.listen((state) {
+                              if (state.processingState == ProcessingState.completed && mounted) {
+                                setState(() {
+                                  _isPlaying = false;
+                                  _currentPosition = Duration.zero;
+                                });
+                              }
+                            });
+                            
+                          } catch (e) {
+                            debugPrint('Error playing recording: $e');
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('حدث خطأ أثناء تشغيل التسجيل'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('لا يوجد تسجيل للآيات المحددة'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  // Delete button
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      size: 28,
+                      color: isDarkMode ? Colors.red[300] : Colors.red[600],
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('حذف التسجيل'),
+                              content: const Text(
+                                'هل أنت متأكد من حذف هذا التسجيل؟',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('إلغاء'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _resetPlaybackBar();
+                                    // Delete the recording file
+                                    if (_savedRecordingPath != null) {
+                                      try {
+                                        File(_savedRecordingPath!).delete();
+                                        setState(() {
+                                          _savedRecordingPath = null;
+                                        });
+                                      } catch (e) {
+                                        debugPrint(
+                                          'Error deleting recording: $e',
+                                        );
+                                      }
+                                    }
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('حذف'),
+                                ),
+                              ],
+                            ),
+                      );
+                    },
+                  ),
+                ],
               ),
 
               // Duration
@@ -1207,13 +1359,6 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   fontSize: 12,
                   color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                 ),
-              ),
-
-              // Close button
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                onPressed: _resetPlaybackBar,
               ),
             ],
           ),
@@ -1391,9 +1536,12 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                   onPressed: () async {
                     final prefs = await SharedPreferences.getInstance();
                     final surahKey = 'surah_${widget.surahNumber}';
-                    final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
+                    final passedSurahs =
+                        prefs.getStringList('passed_surahs') ?? [];
                     final hasPassedTest = passedSurahs.contains(surahKey);
-                    final surahName = quran.getSurahNameArabic(widget.surahNumber);
+                    final surahName = quran.getSurahNameArabic(
+                      widget.surahNumber,
+                    );
 
                     if (!hasPassedTest) {
                       // Scenario 1: Not passed memorization test
@@ -1406,12 +1554,13 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => Scaffold(
-                                body: MemorizationGamesScreen(
-                                  surahNumber: widget.surahNumber,
-                                  surahName: surahName,
-                                ),
-                              ),
+                              builder:
+                                  (context) => Scaffold(
+                                    body: MemorizationGamesScreen(
+                                      surahNumber: widget.surahNumber,
+                                      surahName: surahName,
+                                    ),
+                                  ),
                             ),
                           );
                         },
@@ -1421,28 +1570,34 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                       await showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (context) => AlertDialog(
-                          title: const Text('اختبار التسجيل'),
-                          content: const Text('لقد اجتزت اختبار الحفظ مسبقًا. الخطوة التالية: سجل صوتك للسورة لاختبار الحفظ.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                _markSurahAsMemorized();
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SurahRecordingTestScreen(
-                                      surahNumber: widget.surahNumber,
-                                      surahName: surahName,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: const Text('متابعة'),
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('اختبار التسجيل'),
+                              content: const Text(
+                                'لقد اجتزت اختبار الحفظ مسبقًا. الخطوة التالية: سجل صوتك للسورة لاختبار الحفظ.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    _markSurahAsMemorized();
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                SurahRecordingTestScreen(
+                                                  surahNumber:
+                                                      widget.surahNumber,
+                                                  surahName: surahName,
+                                                ),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('متابعة'),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
                       );
                     }
                   },
@@ -1524,6 +1679,15 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
               ),
 
             _buildBottomBar(),
+
+            // Show playback bar when there's a saved recording
+            if (_showPlaybackBar && _savedRecordingPath != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 80, // Position above the bottom bar
+                child: _buildPlaybackBar(),
+              ),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import 'dart:developer' as developer;
+import 'dart:ui' as ui;
 import '../screens/surah_recording_test_screen.dart';
 import '../widgets/background_widget.dart';
 
@@ -417,25 +418,27 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
   Future<void> _unlockNextSurah() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Get the current surah's position in the sequence
       int currentSurahNumber = widget.surahNumber;
       int nextSurahNumber;
-      
+
       // Determine the next surah in the sequence: 1, 114, 113, ..., 2
       if (currentSurahNumber == 1) {
         nextSurahNumber = 114; // After 1, go to 114
       } else if (currentSurahNumber == 2) {
         return; // No surah after 2 in this sequence
       } else {
-        nextSurahNumber = currentSurahNumber - 1; // Go to previous number (114->113, 113->112, etc.)
+        nextSurahNumber =
+            currentSurahNumber -
+            1; // Go to previous number (114->113, 113->112, etc.)
       }
-      
+
       // Only proceed if we have a valid next surah number
       if (nextSurahNumber >= 1 && nextSurahNumber <= 114) {
         final unlockedSurahs = prefs.getStringList('unlocked_surahs') ?? [];
         final surahKey = 'surah_$nextSurahNumber';
-        
+
         if (!unlockedSurahs.contains(surahKey)) {
           unlockedSurahs.add(surahKey);
           await prefs.setStringList('unlocked_surahs', unlockedSurahs);
@@ -457,14 +460,14 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
         // Add to passed surahs
         passedSurahs.add(surahKey);
         await prefs.setStringList('passed_surahs', passedSurahs);
-        
+
         // Increment global star count
         final currentStars = prefs.getInt('global_star_count') ?? 0;
         await prefs.setInt('global_star_count', currentStars + 1);
-        
+
         developer.log('Successfully saved passed surah: $surahKey');
         developer.log('Updated global_star_count to: ${currentStars + 1}');
-        
+
         // Unlock next surah when current one is passed (2 stars)
         await _unlockNextSurah();
       }
@@ -780,27 +783,83 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
       textDirection: TextDirection.rtl,
       child: Column(
         children: [
+          const SizedBox(height: 8),
+          Text(
+            'اسحب الآيات لترتيبها بالشكل الصحيح',
+            style: GoogleFonts.notoKufiArabic(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: ReorderableListView.builder(
+              buildDefaultDragHandles: false, // Use custom drag handles
               itemCount: _shuffledVerses.length,
               onReorder: _onAyahReorder,
               itemBuilder: (context, index) {
                 final verse = _shuffledVerses[index];
                 return Card(
                   key: ValueKey(verse['number']),
+                  elevation: 2,
                   margin: const EdgeInsets.symmetric(
-                    vertical: 4,
+                    vertical: 6,
                     horizontal: 8,
                   ),
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text('${verse['number']}')),
-                    title: Text(
-                      verse['text'],
-                      style: GoogleFonts.amiriQuran(
-                        fontSize: 20,
-                        textStyle: const TextStyle(height: 1.8),
+                  child: InkWell(
+                    onTap: () {},
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Drag handle with larger touch target
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                              vertical: 16.0,
+                            ),
+                            child: ReorderableDragStartListener(
+                              index: index,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.drag_handle,
+                                  color:
+                                      Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Verse text
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                                vertical: 4.0,
+                              ),
+                              child: Directionality(
+                                textDirection: ui.TextDirection.rtl,
+                                child: Text(
+                                  verse['text'],
+                                  style: GoogleFonts.amiriQuran(
+                                    fontSize: 20,
+                                    height: 1.8,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.right,
                     ),
                   ),
                 );
@@ -823,15 +882,19 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
                             : 'assets/games/button_small.png',
                         fit: BoxFit.contain,
                       ),
-                      Text(
-                        'تحقق من الإجابة',
-                        style: GoogleFonts.kufam(
-                          fontSize: isLargeScreen ? 24 : 20,
-                          fontWeight:
-                              isLargeScreen ? FontWeight.bold : FontWeight.w600,
-                          color: Colors.white,
+                      Directionality(
+                        textDirection: ui.TextDirection.rtl,
+                        child: Text(
+                          'تحقق من الإجابة',
+                          style: GoogleFonts.kufam(
+                            fontSize: isLargeScreen ? 24 : 20,
+                            fontWeight:
+                                isLargeScreen
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -1126,14 +1189,38 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
               style: const TextStyle(fontSize: 20, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isGameInProgress = true;
-                });
-              },
-              child: const Text('ابدأ اللعبة'),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isGameInProgress = true;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 24,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: Text(
+                  'ابدأ اللعبة',
+                  style: GoogleFonts.notoKufiArabic(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -1167,6 +1254,13 @@ class _MemorizationGamesScreenState extends State<MemorizationGamesScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        leading: const SizedBox(), // Remove default back button
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_forward, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
       body: BackgroundWidget(
         child: SafeArea(

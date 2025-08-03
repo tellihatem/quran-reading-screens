@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'widgets/background_widget.dart';
 import 'widgets/pin_input_dialog.dart' show PinStorage, showPinInputDialog;
 import 'widgets/display_settings_dialog.dart';
+import 'parent_progress_screen.dart';
 
 const double _kVerticalPadding = 20.0;
 const double _kMaxContentWidth = 500.0;
@@ -36,10 +37,7 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
               Colors.white.withOpacity(0.05),
             ],
           ),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -58,11 +56,7 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  Icon(icon, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
                   Text(
                     title,
@@ -81,6 +75,7 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -102,9 +97,9 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
                     maxWidth: _kMaxContentWidth,
                   ),
                   child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(
-                      scrollbars: false,
-                    ),
+                    behavior: ScrollConfiguration.of(
+                      context,
+                    ).copyWith(scrollbars: false),
                     child: SingleChildScrollView(
                       physics: const ClampingScrollPhysics(),
                       child: SafeArea(
@@ -131,107 +126,111 @@ class _ParentControlScreenState extends State<ParentControlScreen> {
                                     end: Alignment.bottomRight,
                                   ),
                                   shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 6),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 70,
+                                  color: Colors.white,
+                                ),
+                              ),
+
+                              const SizedBox(height: 30),
+
+                              // Title
+                              Text(
+                                'وضع الوالدين',
+                                style: GoogleFonts.notoKufiArabic(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF4B6A70),
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Subtitle
+                              Text(
+                                'للتحكم في وقت الاستخدام والمحتوى المناسب',
+                                style: GoogleFonts.notoKufiArabic(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w300,
+                                  color: const Color.fromARGB(
+                                    255,
+                                    177,
+                                    193,
+                                    196,
                                   ),
-                                ],
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
+                                textDirection: TextDirection.rtl,
                               ),
-                              child: const Icon(
-                                Icons.lock_outline_rounded,
-                                size: 70,
-                                color: Colors.white,
-                              ),
-                            ),
 
-                            const SizedBox(height: 30),
+                              const SizedBox(height: 40),
 
-                            // Title
-                            Text(
-                              'وضع الوالدين',
-                              style: GoogleFonts.notoKufiArabic(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF4B6A70),
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
+                              // Menu Buttons
+                              _buildMenuButton(
+                                title: 'تغيير الرمز السري',
+                                icon: Icons.lock_reset_rounded,
+                                onTap: () async {
+                                  final newPin = await showPinInputDialog(
+                                    context: context,
+                                    title: 'تغيير الرمز السري',
+                                    description: 'أدخل الرمز السري الجديد',
+                                    showForgotPin: false,
+                                  );
 
-                            const SizedBox(height: 12),
-
-                            // Subtitle
-                            Text(
-                              'للتحكم في وقت الاستخدام والمحتوى المناسب',
-                              style: GoogleFonts.notoKufiArabic(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w300,
-                                color: const Color.fromARGB(255, 177, 193, 196),
-                                height: 1.5,
-                              ),
-                              textAlign: TextAlign.center,
-                              textDirection: TextDirection.rtl,
-                            ),
-
-                            const SizedBox(height: 40),
-
-                            // Menu Buttons
-                            _buildMenuButton(
-                              title: 'تغيير الرمز السري',
-                              icon: Icons.lock_reset_rounded,
-                              onTap: () async {
-                                final newPin = await showPinInputDialog(
-                                  context: context,
-                                  title: 'تغيير الرمز السري',
-                                  description: 'أدخل الرمز السري الجديد',
-                                  showForgotPin: false,
-                                );
-                                
-                                if (newPin != null && newPin.length == 4) {
-                                  // Save the new PIN
-                                  await PinStorage.savePin(newPin);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'تم تغيير الرمز السري بنجاح',
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.notoKufiArabic(),
+                                  if (newPin != null && newPin.length == 4) {
+                                    // Save the new PIN
+                                    await PinStorage.savePin(newPin);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'تم تغيير الرمز السري بنجاح',
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.notoKufiArabic(),
+                                          ),
+                                          backgroundColor: Colors.green,
                                         ),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
+                                      );
+                                    }
                                   }
-                                }
-                              },
-                            ),
-                            _buildMenuButton(
-                              title: 'وقت الاستخدام اليومي',
-                              icon: Icons.timer_outlined,
-                              onTap: () {
-                                // TODO: Implement daily usage time
-                              },
-                            ),
-                            _buildMenuButton(
-                              title: 'اعدادات الشاشة',
-                              icon: Icons.settings_display_outlined,
-                              onTap: () {
-                                DisplaySettingsDialog.show(
-                                  context: context,
-                                );
-                              },
-                            ),
-                            _buildMenuButton(
-                              title: 'تتبع التقدم',
-                              icon: Icons.timeline_outlined,
-                              onTap: () {
-                                // TODO: Implement progress tracking
-                              },
-                            ),
-                          ],
-                        ),
+                                },
+                              ),
+                              _buildMenuButton(
+                                title: 'اعدادات الشاشة',
+                                icon: Icons.settings_display_outlined,
+                                onTap: () {
+                                  DisplaySettingsDialog.show(context: context);
+                                },
+                              ),
+                              _buildMenuButton(
+                                title: 'تتبع التقدم',
+                                icon: Icons.timeline_outlined,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) =>
+                                              const ParentProgressScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
