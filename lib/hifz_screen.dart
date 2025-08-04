@@ -35,17 +35,17 @@ class _HifzScreenState extends State<HifzScreen> {
 
     final memorized = <int>{};
     final unlocked = <int>{};
-    // Get the global star count
+    // Get the global star count and three-star surahs count
     final totalStars = prefs.getInt('global_star_count') ?? 0;
-
-    // Count memorized surahs, surahs with 3 stars, and load passed surahs
-    int threeStarCount = 0;
+    int threeStarCount = prefs.getInt('three_star_surahs_count') ?? 0;
+    
+    // Count memorized surahs and load passed surahs
     final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
     final unlockedSurahs = prefs.getStringList('unlocked_surahs') ?? [];
-    
+
     // Surah 1 is always unlocked by default
     unlocked.add(1);
-    
+
     // Add other unlocked surahs
     for (final surahKey in unlockedSurahs) {
       final surahNum = int.tryParse(surahKey.replaceAll('surah_', ''));
@@ -53,24 +53,21 @@ class _HifzScreenState extends State<HifzScreen> {
         unlocked.add(surahNum);
       }
     }
-    
+
     for (int i = 1; i <= 114; i++) {
       final isMemorized = prefs.getBool('surah_${i}_memorized') ?? false;
       if (isMemorized) {
         memorized.add(i);
       }
 
-      // Count surahs with 3 stars
-      final surahStars = prefs.getInt('surah_${i}_stars') ?? 0;
-      if (surahStars >= 3) {
-        threeStarCount++;
-      }
-      
       // Check if surah is passed
       if (passedSurahs.contains('surah_$i')) {
         _passedSurahs.add(i);
       }
     }
+
+    // Retrieve three_star_surahs_count directly from SharedPreferences
+    threeStarCount = prefs.getInt('three_star_surahs_count') ?? 0;
 
     if (mounted) {
       setState(() {
@@ -114,7 +111,7 @@ class _HifzScreenState extends State<HifzScreen> {
                           'assets/hafiz/score.svg',
                           fit: BoxFit.contain,
                         ),
-                        // Left counter (stars)
+                        // Left counter (3-star surahs)
                         Positioned(
                           left: 60,
                           top: 16,
@@ -134,7 +131,7 @@ class _HifzScreenState extends State<HifzScreen> {
                             ),
                           ),
                         ),
-                        // Right counter (trophies)
+                        // Right counter (total stars)
                         Positioned(
                           right: 35,
                           top: 16,

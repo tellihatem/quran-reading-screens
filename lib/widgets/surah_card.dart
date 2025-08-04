@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:haffiz/surah_reading_screen.dart';
 
 class SurahCard extends StatelessWidget {
@@ -141,6 +142,11 @@ class SurahCard extends StatelessWidget {
     );
   }
 
+  Future<bool> _isRecordPassed(int surahNumber) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('surah_${surahNumber}_record_passed') ?? false;
+  }
+
   List<Widget> _buildStars(double cardWidth, double cardHeight) {
     // Calculate dimensions as ratios of card size
     final starWidth = cardWidth * (_starWidth / 170.0);
@@ -182,14 +188,22 @@ class SurahCard extends StatelessWidget {
           height: centerStarHeight,
         ),
       ),
-      // Right star
+      // Right star - use success star if 3 stars
       Positioned(
         left: startX + starWidth + centerStarWidth + starSpacing * 2,
         top: starSideTop,
-        child: Image.asset(
-          'assets/cards/star_side.png',
-          width: starWidth,
-          height: starHeight,
+        child: FutureBuilder<bool>(
+          future: _isRecordPassed(surahNumber),
+          builder: (context, snapshot) {
+            final isRecordPassed = snapshot.data ?? false;
+            return Image.asset(
+              isRecordPassed
+                  ? 'assets/cards/star_side_success.png'
+                  : 'assets/cards/star_side.png',
+              width: starWidth,
+              height: starHeight,
+            );
+          },
         ),
       ),
     ];

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quran/quran.dart' as quran;
 import 'widgets/background_widget.dart';
@@ -28,8 +28,12 @@ class ParentProgressScreen extends StatefulWidget {
 class _ParentProgressScreenState extends State<ParentProgressScreen> {
   Future<int> _getGlobalStarCount() async {
     final prefs = await SharedPreferences.getInstance();
-    // Replace 'global_star_count' with your actual SharedPreferences key
     return prefs.getInt('global_star_count') ?? 0;
+  }
+
+  Future<int> _getThreeStarSurahsCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('three_star_surahs_count') ?? 0;
   }
 
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -333,13 +337,22 @@ class _ParentProgressScreenState extends State<ParentProgressScreen> {
                                             color: textColor,
                                           ),
                                         ),
-                                        Text(
-                                          '—',
-                                          style: GoogleFonts.notoKufiArabic(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: accentColor,
-                                          ),
+                                        FutureBuilder<int>(
+                                          future: _getThreeStarSurahsCount(),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return const CircularProgressIndicator();
+                                            }
+                                            return Text(
+                                              '${snapshot.data ?? 0}',
+                                              style: GoogleFonts.notoKufiArabic(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: accentColor,
+                                              ),
+                                            );
+                                          },
                                         ),
                                       ],
                                     ),
@@ -675,7 +688,115 @@ class _ParentProgressScreenState extends State<ParentProgressScreen> {
                                                                   Colors.white,
                                                             ),
                                                       ),
-                                                      onPressed: () {},
+                                                      onPressed: () async {
+                                                        final prefs =
+                                                            await SharedPreferences.getInstance();
+                                                        final surahNumber =
+                                                            surah.number;
+
+                                                        try {
+                                                          // Delete the audio file and remove the surah from SharedPreferences and the UI list
+                                                          final recordingKey = 'recording_surah_$surahNumber';
+                                                          final filePath = prefs.getString(recordingKey);
+                                                          if (filePath != null) {
+                                                            final audioFile = File(filePath);
+                                                            if (await audioFile.exists()) {
+                                                              await audioFile.delete();
+                                                            }
+                                                            await prefs.remove(recordingKey);
+                                                          }
+                                                          setState(() {
+                                                            _recordedSurahs.removeWhere((s) => s['number'] == surahNumber);
+                                                          });
+
+                                                          // Mark surah as record passed
+                                                          await prefs.setBool(
+                                                            'surah_${surahNumber}_record_passed',
+                                                            true,
+                                                          );
+
+                                                          // Increment memorized surahs counter
+                                                          final currentMemorized =
+                                                              prefs.getInt(
+                                                                'memorized_surahs_count',
+                                                              ) ??
+                                                              0;
+                                                          await prefs.setInt(
+                                                            'memorized_surahs_count',
+                                                            currentMemorized +
+                                                                1,
+                                                          );
+
+                                                          // Update global star count
+                                                          final currentGlobalStars =
+                                                              prefs.getInt(
+                                                                'global_star_count',
+                                                              ) ??
+                                                              0;
+                                                          await prefs.setInt(
+                                                            'global_star_count',
+                                                            currentGlobalStars +
+                                                                1,
+                                                          );
+
+                                                          // Increment the three-star surahs counter by 1 every time the button is pressed
+                                                          await prefs.setInt(
+                                                            'three_star_surahs_count',
+                                                            prefs.getInt(
+                                                                  'three_star_surahs_count',
+                                                                ) ??
+                                                                0 + 1,
+                                                          );
+
+                                                          if (mounted) {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
+
+                                                            // Show success message
+                                                            ScaffoldMessenger.of(
+                                                              context,
+                                                            ).showSnackBar(
+                                                              const SnackBar(
+                                                                content: Text(
+                                                                  'تم حفظ السورة بنجاح!',
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .center,
+                                                                ),
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .green,
+                                                              ),
+                                                            );
+
+                                                            // Update the UI
+                                                            setState(() {
+                                                              // Remove the surah from the list
+                                                              _recordedSurahs
+                                                                  .removeWhere(
+                                                                    (s) =>
+                                                                        s['number'] ==
+                                                                        surahNumber,
+                                                                  );
+                                                            });
+                                                          }
+                                                        } catch (e) {
+                                                          if (mounted) {
+                                                            ScaffoldMessenger.of(
+                                                              context,
+                                                            ).showSnackBar(
+                                                              SnackBar(
+                                                                content: Text(
+                                                                  'حدث خطأ: ${e.toString()}',
+                                                                ),
+                                                                backgroundColor:
+                                                                    Colors.red,
+                                                              ),
+                                                            );
+                                                          }
+                                                        }
+                                                      },
                                                     ),
                                                   ),
                                                   const SizedBox(width: 10),
