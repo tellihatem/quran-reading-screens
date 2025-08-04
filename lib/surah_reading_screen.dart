@@ -1549,20 +1549,23 @@ class _SurahReadingScreenState extends State<SurahReadingScreen> {
                         context,
                         surahNumber: widget.surahNumber,
                         surahName: surahName,
-                        onConfirm: () {
+                        onConfirm: () async {
                           _markSurahAsMemorized();
-                          Navigator.pushReplacement(
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder:
-                                  (context) => Scaffold(
-                                    body: MemorizationGamesScreen(
-                                      surahNumber: widget.surahNumber,
-                                      surahName: surahName,
-                                    ),
-                                  ),
+                              builder: (context) => Scaffold(
+                                body: MemorizationGamesScreen(
+                                  surahNumber: widget.surahNumber,
+                                  surahName: surahName,
+                                ),
+                              ),
                             ),
                           );
+                          // If exam was passed, notify parent to refresh
+                          if (result == true && widget.onSurahMemorized != null) {
+                            widget.onSurahMemorized!();
+                          }
                         },
                       );
                     } else {

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui' as ui;
 import 'package:haffiz/main_screen.dart';
 import 'package:haffiz/services/shared_prefs_service.dart';
 import 'package:haffiz/providers/theme_provider.dart';
+
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 void main() async {
   // Ensure Flutter bindings are initialized
@@ -36,6 +39,7 @@ class _MyAppState extends State<MyApp> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     
     return MaterialApp(
+      navigatorObservers: [routeObserver],
       title: 'حافظ',
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(

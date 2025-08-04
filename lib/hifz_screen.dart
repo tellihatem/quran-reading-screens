@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../widgets/surah_card.dart';
 import 'package:quran/quran.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/background_widget.dart';
+import 'main.dart'; // for routeObserver
 
 class HifzScreen extends StatefulWidget {
   const HifzScreen({Key? key}) : super(key: key);
@@ -13,7 +16,8 @@ class HifzScreen extends StatefulWidget {
   _HifzScreenState createState() => _HifzScreenState();
 }
 
-class _HifzScreenState extends State<HifzScreen> {
+class _HifzScreenState extends State<HifzScreen>
+    with WidgetsBindingObserver, RouteAware {
   final Set<int> _memorizedSurahs = {};
   final Set<int> _passedSurahs = {};
   final Set<int> _unlockedSurahs = {};
@@ -24,6 +28,38 @@ class _HifzScreenState extends State<HifzScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadMemorizedSurahs();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadMemorizedSurahs();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Register this screen as a route observer
+    final ModalRoute? route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+    _loadMemorizedSurahs();
+  }
+
+  @override
+  void didPopNext() {
+    // Called when coming back to this screen (e.g. via back arrow)
     _loadMemorizedSurahs();
   }
 
@@ -38,7 +74,7 @@ class _HifzScreenState extends State<HifzScreen> {
     // Get the global star count and three-star surahs count
     final totalStars = prefs.getInt('global_star_count') ?? 0;
     int threeStarCount = prefs.getInt('three_star_surahs_count') ?? 0;
-    
+
     // Count memorized surahs and load passed surahs
     final passedSurahs = prefs.getStringList('passed_surahs') ?? [];
     final unlockedSurahs = prefs.getStringList('unlocked_surahs') ?? [];
