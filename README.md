@@ -1,16 +1,57 @@
-# haffiz
+# Little Hafiz
 
-A new Flutter project.
+A comprehensive Quran memorization experience for kids and adults. This Flutter-based project offers verse-by-verse listening, interactive memorization methods, progress tracking, and more. It’s optimized for Flutter Web but can also be wrapped for mobile platforms.
 
-## Getting Started
+## ✨ Features
 
-This project is a starting point for a Flutter application.
+* Display of Quranic text with surah and ayah selection.
+* Various memorization methods implemented for flexible learning.
+* Interactive exercises and gamified memorization techniques.
+* Progress tracking for learners and parental oversight.
+* Offline-capable PWA experience via `flutter_service_worker.js`.
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Tech Stack
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+* **Framework:** Flutter (Dart)
+* **Target:** Flutter Web (Android/iOS support available)
+* **Rendering:** CanvasKit for high-quality typography and smooth animations
+* **PWA:** Manifest + service worker for offline usage and installability
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Getting Started
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/tellihatem/Little_Haffiz.git
+   ```
+2. Navigate to the project folder:
+
+   ```bash
+   cd Little_Haffiz
+   ```
+3. Install dependencies:
+
+   ```bash
+   flutter pub get
+   ```
+4. Run the app in web mode:
+
+   ```bash
+   flutter run -d chrome
+   ```
+
+## 📂 Project Structure
+
+* `lib/` – Main Flutter code and screens
+* `assets/` – Images, audio, and other static resources
+* `web/` – Web-specific build assets and PWA configuration
+* `android/`, `ios/`, `windows/`, `macos/`, `linux/` – Platform-specific files
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome.
+Please follow standard Flutter/Dart guidelines when submitting changes.
+
+## 📜 License
+
+This project is open source. Check the repository for the license file.
